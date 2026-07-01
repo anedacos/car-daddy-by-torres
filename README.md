@@ -98,9 +98,7 @@ Business contact values live in `src/data/content.js`.
 - WhatsApp: `6088441166`
 - Email: `cardaddybytorres.llc@gmail.com`
 - Facebook: `https://www.facebook.com/profile.php?id=61591725022520`
-- Instagram placeholder: `ADD_INSTAGRAM_URL_HERE`
-
-Replace `ADD_INSTAGRAM_URL_HERE` with the final Instagram URL before launch.
+- Instagram: `https://www.instagram.com/cardaddybytorres.llc/`
 
 ## Media
 
@@ -174,7 +172,6 @@ No payment processing is included.
 
 ## Still Needed From Owner
 
-- Final Instagram URL
 - Final domain
 - Final approved photos/videos
 - Tax settings

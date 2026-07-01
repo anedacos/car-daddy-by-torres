@@ -18,7 +18,7 @@ export const business = {
   phone: '6088441166',
   email: 'cardaddybytorres.llc@gmail.com',
   facebook: 'https://www.facebook.com/profile.php?id=61591725022520',
-  instagram: 'ADD_INSTAGRAM_URL_HERE',
+  instagram: 'https://www.instagram.com/cardaddybytorres.llc/',
   serviceArea: '39503',
 };
 

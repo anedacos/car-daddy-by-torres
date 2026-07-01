@@ -37,6 +37,6 @@ Mechanical help is available beyond regular cars. Car Daddy By Torres can suppor
 
 ## Pending Before Publishing
 
-- Confirm the final Instagram Business URL.
+- Instagram URL confirmed: `https://www.instagram.com/cardaddybytorres.llc/`.
 - Confirm whether the Facebook page should use English-only, Spanish-only, or bilingual captions.
 - Confirm if pricing, service radius, or emergency surcharge should be mentioned publicly.
