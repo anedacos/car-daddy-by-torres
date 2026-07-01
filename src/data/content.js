@@ -71,7 +71,7 @@ export const languages = {
     },
     servicesTitle: 'Mechanical Service Built Around the Job',
     servicesIntro:
-      'Mobile diagnostics, repairs, equipment support, marine mechanical service, and 24/7 car dolly towing without paint, bodywork, collision repair, detailing, or cosmetic repair claims.',
+      'Mobile diagnostics, repairs, equipment support, marine mechanical service, and 24/7 car dolly towing.',
     towing: {
       title: '24/7 Car Dolly Towing Service',
       body:
@@ -176,7 +176,7 @@ export const languages = {
     },
     servicesTitle: 'Servicio Mecánico Según el Trabajo',
     servicesIntro:
-      'Diagnóstico móvil, reparaciones, apoyo para equipos, servicio mecánico marino y remolque 24/7 sin anunciar pintura, carrocería, reparación de choque, detailing ni reparaciones cosméticas.',
+      'Diagnóstico móvil, reparaciones, apoyo para equipos, servicio mecánico marino y remolque con car dolly 24/7.',
     towing: {
       title: 'Servicio de Remolque con Car Dolly 24/7',
       body:
@@ -322,7 +322,6 @@ export const faqs = [
   ['Do you work on boats?', '¿Trabajan con embarcaciones?', 'Yes, mechanical boat service is available depending on the job and location.', 'Sí, hay servicio mecánico para embarcaciones según el trabajo y la ubicación.'],
   ['Do you work on heavy equipment?', '¿Trabajan con equipo pesado?', 'Yes, mechanical service is available for light and heavy equipment.', 'Sí, hay servicio mecánico para equipo liviano y pesado.'],
   ['Do you offer towing?', '¿Ofrecen remolque?', 'Yes. 24/7 towing is available locally or by distance depending on schedule and availability.', 'Sí. Hay remolque 24/7 local o por distancia según horario y disponibilidad.'],
-  ['Do you do paint or bodywork?', '¿Hacen pintura o carrocería?', 'No. Car Daddy By Torres does mechanical and electromechanical work only.', 'No. Car Daddy By Torres trabaja solamente mecánica y electromecánica.'],
   ['How do I request service?', '¿Cómo solicito servicio?', 'Use the form, call, or send a WhatsApp message with your location and vehicle details.', 'Usa el formulario, llama o envía WhatsApp con tu ubicación y detalles del vehículo.'],
   ['Can I send photos?', '¿Puedo enviar fotos?', 'Yes. Photos are optional and can help explain the issue faster.', 'Sí. Las fotos son opcionales y pueden ayudar a explicar el problema más rápido.'],
   ['Do you speak Spanish?', '¿Hablan español?', 'Yes. Service is available in English and Spanish.', 'Sí. El servicio está disponible en inglés y español.'],
