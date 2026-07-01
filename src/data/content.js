@@ -47,7 +47,7 @@ export const languages = {
     nav: ['Home', 'Services', 'Towing', 'Request Service', 'Join Our Team', 'FAQ', 'Contact'],
     hero: {
       eyebrow: '24/7 mobile service near ZIP 39503',
-      title: '24/7 Mobile Mechanic & Towing Service',
+      title: '24/7 Mobile Mechanic & Car Dolly Towing',
       subtitle:
         'Gas, diesel, light equipment, heavy equipment, and boats. Mechanical and electromechanical work only.',
       support: 'Fast response, fair rates, and clear communication for local and distance-based jobs.',
@@ -71,11 +71,11 @@ export const languages = {
     },
     servicesTitle: 'Mechanical Service Built Around the Job',
     servicesIntro:
-      'Mobile diagnostics, repairs, equipment support, marine mechanical service, and 24/7 towing without paint, bodywork, collision repair, detailing, or cosmetic repair claims.',
+      'Mobile diagnostics, repairs, equipment support, marine mechanical service, and 24/7 car dolly towing without paint, bodywork, collision repair, detailing, or cosmetic repair claims.',
     towing: {
-      title: '24/7 Auto Towing Service',
+      title: '24/7 Car Dolly Towing Service',
       body:
-        'Call or message for 24/7 towing availability and pricing. Car Daddy By Torres supports local and distance-based towing depending on availability, job type, and schedule, with fast response and competitive rates.',
+        'Call or message for 24/7 car dolly towing availability and pricing. Car Daddy By Torres supports local and distance-based car dolly towing depending on vehicle type, availability, job distance, and schedule.',
     },
     area: {
       title: 'Service Area',
@@ -178,7 +178,7 @@ export const languages = {
     servicesIntro:
       'Diagnóstico móvil, reparaciones, apoyo para equipos, servicio mecánico marino y remolque 24/7 sin anunciar pintura, carrocería, reparación de choque, detailing ni reparaciones cosméticas.',
     towing: {
-      title: 'Servicio de Remolque 24/7',
+      title: 'Servicio de Remolque con Car Dolly 24/7',
       body:
         'Llama o envía mensaje para disponibilidad y precio de remolque 24/7. Car Daddy By Torres ofrece remolque local o por distancia según disponibilidad, tipo de trabajo y horario, con respuesta rápida y tarifas competitivas.',
     },
@@ -264,7 +264,7 @@ export const services = [
   ['Brakes', 'Frenos', Bike, 'brakes'],
   ['Starter / Alternator', 'Starter / Alternador', Cable, 'starter'],
   ['Electromechanical Troubleshooting', 'Diagnóstico Electromecánico', LifeBuoy, 'electro'],
-  ['24/7 Towing Service', 'Servicio de Remolque 24/7', Truck, 'towing'],
+  ['24/7 Car Dolly Towing Service', 'Servicio de Remolque con Dolly 24/7', Truck, 'towing'],
 ];
 
 export const selectOptions = {
