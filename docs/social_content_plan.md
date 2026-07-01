@@ -40,3 +40,13 @@ Mechanical help is available beyond regular cars. Car Daddy By Torres can suppor
 - Instagram URL confirmed: `https://www.instagram.com/cardaddybytorres.llc/`.
 - Confirm whether the Facebook page should use English-only, Spanish-only, or bilingual captions.
 - Confirm if pricing, service radius, or emergency surcharge should be mentioned publicly.
+
+## Instagram Image Set
+
+Prepared square images for Instagram are stored in:
+
+```text
+public/media/06_final_instagram/service_posts
+```
+
+The set includes 12 service posts: mobile mechanic, gas vehicle repair, diesel vehicle repair, heavy equipment, light equipment, boat mechanical, diagnostics, battery/no-start, brakes, starter/alternator, electromechanical troubleshooting, and car dolly towing.
