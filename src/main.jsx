@@ -647,7 +647,7 @@ function AdminApp({ lang }) {
 
   function unlock(event) {
     event.preventDefault();
-    const expected = import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
+    const expected = import.meta.env.VITE_ADMIN_PASSWORD;
     if (password === expected) {
       sessionStorage.setItem('carDaddy.admin', 'true');
       setAllowed(true);

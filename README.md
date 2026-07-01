@@ -37,7 +37,7 @@ Then open the local URL shown by Vite. The admin route is:
 /admin
 ```
 
-If `VITE_ADMIN_PASSWORD` is not set, the local fallback password is `admin`. Do not deploy with that fallback.
+If `VITE_ADMIN_PASSWORD` is not set, the admin panel remains locked. Set it locally and in Cloudflare Pages before using `/admin`.
 
 ## Environment Variables
 
