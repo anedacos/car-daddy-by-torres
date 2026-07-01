@@ -118,12 +118,16 @@ function optionLabel(pair, lang) {
 function ContactButtons({ t, compact = false }) {
   const instagramReady = business.instagram && !business.instagram.includes('ADD_');
   const buttonClass = compact ? 'btn btn-small' : 'btn';
+  const whatsappIntro =
+    t.code === 'es'
+      ? 'Hola, necesito servicio de mecanico movil o remolque. Mi ZIP code es _____. El problema es _____.'
+      : 'Hi, I need mobile mechanic or towing service. My ZIP code is _____. The issue is _____.';
   return (
     <div className="contact-actions">
       <a className={`${buttonClass} btn-primary`} href={`tel:${business.phone}`}>
         <Phone size={18} /> {t.buttons.call}
       </a>
-      <a className={`${buttonClass} btn-green`} href={buildWhatsAppUrl('Hello Car Daddy By Torres, I need service.')} target="_blank" rel="noreferrer">
+      <a className={`${buttonClass} btn-green`} href={buildWhatsAppUrl(whatsappIntro)} target="_blank" rel="noreferrer">
         <MessageCircle size={18} /> {t.buttons.whatsapp}
       </a>
       <a className={`${buttonClass} btn-muted`} href={`mailto:${business.email}`}>
@@ -132,9 +136,11 @@ function ContactButtons({ t, compact = false }) {
       <a className={`${buttonClass} btn-muted`} href={business.facebook} target="_blank" rel="noreferrer">
         <Facebook size={18} /> Facebook
       </a>
-      <a className={`${buttonClass} btn-muted ${instagramReady ? '' : 'is-placeholder'}`} href={instagramReady ? business.instagram : '#contact'} title="Add Instagram URL in src/data/content.js">
-        Instagram
-      </a>
+      {instagramReady ? (
+        <a className={`${buttonClass} btn-muted`} href={business.instagram} target="_blank" rel="noreferrer">
+          Instagram
+        </a>
+      ) : null}
     </div>
   );
 }
@@ -229,7 +235,7 @@ function InfoBands({ t }) {
           <p>{t.towing.body}</p>
           <ContactButtons t={t} compact />
         </div>
-        <img src={assets.diesel} alt="" />
+        <img src={assets.towing} alt="" />
       </section>
       <section className="section compact-section">
         <div className="two-col">

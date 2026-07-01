@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   Gauge,
   LifeBuoy,
-  Phone,
   ShipWheel,
   Truck,
   Wrench,
@@ -24,14 +23,20 @@ export const business = {
 };
 
 export const assets = {
-  hero: '/media/cover/cover_recommended_01.jpg',
+  hero: '/media/09_hero_banner/hero_clean_mechanic.jpg',
   profile: '/media/profile/profile_recommended_01.jpg',
-  mobile: '/media/services/service_mobile_mechanic_01.jpg',
-  diagnostics: '/media/services/service_diagnostics_01.jpg',
-  diesel: '/media/services/service_diesel_equipment_01.jpg',
-  boat: '/media/services/service_boat_mechanical_01.jpg',
-  brakes: '/media/services/service_brakes_01.jpg',
-  gas: '/media/services/service_gas_vehicle_01.jpg',
+  mobile: '/media/08_servicios/mobile_mechanic_clean.jpg',
+  gas: '/media/08_servicios/gas_vehicle_repair.jpg',
+  diesel: '/media/08_servicios/diesel_vehicle_repair.jpg',
+  heavy: '/media/08_servicios/heavy_equipment_service.jpg',
+  light: '/media/08_servicios/light_equipment_service.jpg',
+  boat: '/media/08_servicios/boat_mechanical_service.jpg',
+  diagnostics: '/media/08_servicios/diagnostics_tools.jpg',
+  battery: '/media/08_servicios/battery_no_start.jpg',
+  brakes: '/media/08_servicios/brake_service_clean.jpg',
+  starter: '/media/08_servicios/starter_alternator.jpg',
+  electro: '/media/08_servicios/electromechanical_troubleshooting.jpg',
+  towing: '/media/07_towing_remolque/towing_flatbed_clean.jpg',
 };
 
 export const languages = {
@@ -251,15 +256,15 @@ export const services = [
   ['Mobile Mechanic Service', 'Servicio de Mecánico Móvil', Wrench, 'mobile'],
   ['Gas Vehicle Repair', 'Reparación de Vehículos de Gasolina', Car, 'gas'],
   ['Diesel Vehicle Repair', 'Reparación de Vehículos Diésel', Truck, 'diesel'],
-  ['Heavy Equipment Mechanical Service', 'Servicio Mecánico de Equipo Pesado', Gauge, 'diesel'],
-  ['Light Equipment Mechanical Service', 'Servicio Mecánico de Equipo Liviano', ClipboardCheck, 'mobile'],
+  ['Heavy Equipment Mechanical Service', 'Servicio Mecánico de Equipo Pesado', Gauge, 'heavy'],
+  ['Light Equipment Mechanical Service', 'Servicio Mecánico de Equipo Liviano', ClipboardCheck, 'light'],
   ['Boat Mechanical Service', 'Servicio Mecánico de Embarcaciones', ShipWheel, 'boat'],
   ['Diagnostics', 'Diagnósticos', Zap, 'diagnostics'],
-  ['Battery / No-Start Help', 'Ayuda de Batería / No Enciende', BatteryCharging, 'diagnostics'],
+  ['Battery / No-Start Help', 'Ayuda de Batería / No Enciende', BatteryCharging, 'battery'],
   ['Brakes', 'Frenos', Bike, 'brakes'],
-  ['Starter / Alternator', 'Starter / Alternador', Cable, 'diagnostics'],
-  ['Electromechanical Troubleshooting', 'Diagnóstico Electromecánico', LifeBuoy, 'mobile'],
-  ['24/7 Towing Service', 'Servicio de Remolque 24/7', Truck, 'gas'],
+  ['Starter / Alternator', 'Starter / Alternador', Cable, 'starter'],
+  ['Electromechanical Troubleshooting', 'Diagnóstico Electromecánico', LifeBuoy, 'electro'],
+  ['24/7 Towing Service', 'Servicio de Remolque 24/7', Truck, 'towing'],
 ];
 
 export const selectOptions = {

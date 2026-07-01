@@ -127,11 +127,15 @@ img {
 }
 
 .hero-bg {
+  filter: saturate(0.9) contrast(1.05);
   object-fit: cover;
+  object-position: center;
 }
 
 .hero-overlay {
-  background: linear-gradient(90deg, rgba(16, 20, 24, 0.92), rgba(16, 20, 24, 0.62), rgba(16, 20, 24, 0.2));
+  background:
+    radial-gradient(circle at 18% 42%, rgba(16, 20, 24, 0.36), transparent 34%),
+    linear-gradient(90deg, rgba(16, 20, 24, 0.96) 0%, rgba(16, 20, 24, 0.82) 46%, rgba(16, 20, 24, 0.32) 100%);
 }
 
 .hero-content {
@@ -605,7 +609,7 @@ td {
   }
 
   .hero-overlay {
-    background: rgba(16, 20, 24, 0.78);
+    background: linear-gradient(180deg, rgba(16, 20, 24, 0.9), rgba(16, 20, 24, 0.76));
   }
 
   .hero-content {

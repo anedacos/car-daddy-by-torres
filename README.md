@@ -88,6 +88,8 @@ dist
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_ADMIN_PASSWORD`
 
+Production is deployed from GitHub `main` through Cloudflare Pages. After a commit is pushed to GitHub, Cloudflare builds and publishes the update automatically; no full redeployment from scratch is needed for normal website changes.
+
 ## Contact and Social URLs
 
 Business contact values live in `src/data/content.js`.
@@ -105,15 +107,15 @@ Replace `ADD_INSTAGRAM_URL_HERE` with the final Instagram URL before launch.
 Website media is stored in:
 
 ```text
-public/media/profile
-public/media/cover
-public/media/services
-public/media/towing
-public/media/team
-public/media/invoices
-public/media/stock_legal_downloaded
-public/media/discarded
-public/media/sources_and_licenses
+public/media/04_final_web
+public/media/05_final_facebook
+public/media/06_final_instagram
+public/media/07_towing_remolque
+public/media/08_servicios
+public/media/09_hero_banner
+public/media/10_logo_perfil
+public/media/11_stock_legal_descargado
+public/media/12_fuentes_y_licencias
 ```
 
 This version uses local corrected business photos copied from:
@@ -122,7 +124,9 @@ This version uses local corrected business photos copied from:
 C:\Users\Minuto Creativo\Documents\Car Daddy Project\Fotos de mecanica corregidas
 ```
 
-If downloaded stock assets are added later, document each file in `public/media/sources_and_licenses/media_sources.md` with source URL, platform, license type, download date, and reason used.
+The current audit and usage decisions are documented in `media_audit_report.md`. Downloaded stock assets and license notes are documented in `public/media/12_fuentes_y_licencias/sources_and_licenses.md`.
+
+Prepared, unpublished social copy is stored in `docs/social_content_plan.md`.
 
 ## Updating English / Spanish Text
 

@@ -1,9 +1,15 @@
 # Media Sources
 
-No downloaded third-party assets were used in this first version.
+Current source and license notes are maintained in:
 
-Local business images were copied from:
+```text
+public/media/12_fuentes_y_licencias/sources_and_licenses.md
+```
 
-- `C:\Users\Minuto Creativo\Documents\Car Daddy Project\Fotos de mecanica corregidas`
+The media audit is maintained in:
 
-Before publishing, confirm that every local photo/video is approved for commercial use by Car Daddy By Torres and does not show private license plates, addresses, faces, customer information, or restricted logos.
+```text
+media_audit_report.md
+```
+
+Before publishing new local photo/video assets, confirm that every file is approved for commercial use by Car Daddy By Torres and does not show private license plates, addresses, faces, customer information, or restricted logos.
