@@ -2,6 +2,31 @@
 
 Professional bilingual website and lightweight business system for **Car Daddy By Torres / Car Daddy by Torres LLC**.
 
+## Resume This Project On Another Computer
+
+This repository is the source of truth for the project. On a new Windows computer, install Git and Node.js LTS, then run:
+
+```powershell
+cd $HOME\Documents
+git clone https://github.com/anedacos/car-daddy-by-torres.git
+cd car-daddy-by-torres
+corepack enable
+pnpm install
+Copy-Item .env.example .env.local
+notepad .env.local
+pnpm dev
+```
+
+Open the local URL printed by Vite. Secrets and production credentials are not stored in GitHub; obtain the Supabase values and admin password from the project owner and place them only in `.env.local`.
+
+When asking Codex to continue this project on another computer, use:
+
+```text
+Clone anedacos/car-daddy-by-torres, read README.md completely, install the documented dependencies, create the local environment file from .env.example, and run the build before making changes. Never commit secrets or generated files.
+```
+
+Before starting new work, Codex should run `git status`, `git pull --ff-only`, `pnpm install`, and `pnpm build`. Production is updated from the `main` branch through Cloudflare Pages.
+
 The site is built for a low-cost MVP stack:
 
 - React + Vite
