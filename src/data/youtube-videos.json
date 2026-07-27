@@ -1,0 +1,87 @@
+{
+  "channelName": "Anthony en Movimiento",
+  "channelUrl": "https://www.youtube.com/@anedacos",
+  "syncedAt": "2026-07-27T22:50:40.372Z",
+  "categories": [
+    {
+      "id": "automotive",
+      "title": "Automotive Mechanics",
+      "titleEs": "Mecánica automotriz",
+      "playlistId": "PLUYsE3yUAE7A",
+      "videos": [
+        {
+          "id": "-25WMqXFoUU",
+          "title": "Conexión de mangueras de aire blazer S10 TBI 1993 / Connection the air hoses in a Blazer s10",
+          "duration": "3:15",
+          "category": "automotive",
+          "playlistId": "PLUYsE3yUAE7A",
+          "thumbnail": "https://i.ytimg.com/vi/-25WMqXFoUU/hqdefault.jpg",
+          "youtubeUrl": "https://www.youtube.com/watch?v=-25WMqXFoUU&list=PLUYsE3yUAE7A",
+          "isShort": false
+        },
+        {
+          "id": "Y9jTU_ju-n0",
+          "title": "Prueba de la conexión 'mangueras de aire blazer S10 TBI 1993' /Connection the air hoses\"",
+          "duration": "1:31",
+          "category": "automotive",
+          "playlistId": "PLUYsE3yUAE7A",
+          "thumbnail": "https://i.ytimg.com/vi/Y9jTU_ju-n0/hqdefault.jpg",
+          "youtubeUrl": "https://www.youtube.com/watch?v=Y9jTU_ju-n0&list=PLUYsE3yUAE7A",
+          "isShort": false
+        },
+        {
+          "id": "x_LwQ_5afdE",
+          "title": "Toyota Avalon 2013 Transmission Vibration FIX | ATF Dialysis That ACTUALLY Works",
+          "duration": "2:04",
+          "category": "automotive",
+          "playlistId": "PLUYsE3yUAE7A",
+          "thumbnail": "https://i.ytimg.com/vi/x_LwQ_5afdE/hqdefault.jpg",
+          "youtubeUrl": "https://www.youtube.com/watch?v=x_LwQ_5afdE&list=PLUYsE3yUAE7A",
+          "isShort": false
+        },
+        {
+          "id": "NVfWaP5Ci3c",
+          "title": "Hyundai Veloster 2012 NO Turbo | Alternador, TCM y Caja de Fusibles – Cómo lo Diagnostiqué y Reparé",
+          "duration": "8:23",
+          "category": "automotive",
+          "playlistId": "PLUYsE3yUAE7A",
+          "thumbnail": "https://i.ytimg.com/vi/NVfWaP5Ci3c/hqdefault.jpg",
+          "youtubeUrl": "https://www.youtube.com/watch?v=NVfWaP5Ci3c&list=PLUYsE3yUAE7A",
+          "isShort": false
+        }
+      ]
+    },
+    {
+      "id": "marine",
+      "title": "Boat & Marine Mechanics",
+      "titleEs": "Mecánica de botes y marina",
+      "playlistId": "PLAd23alVtHMs",
+      "videos": []
+    },
+    {
+      "id": "powersports",
+      "title": "Motorcycles, ATVs & Quads",
+      "titleEs": "Motocicletas, ATVs y quads",
+      "playlistId": "PLHLjLf2I-1I8",
+      "videos": [
+        {
+          "id": "Rr3It3ZRoX4",
+          "title": "Pulsar 160 2018 | Arranque en frío y sonido del motor",
+          "duration": "0:46",
+          "category": "powersports",
+          "playlistId": "PLHLjLf2I-1I8",
+          "thumbnail": "https://i.ytimg.com/vi/Rr3It3ZRoX4/hqdefault.jpg",
+          "youtubeUrl": "https://www.youtube.com/watch?v=Rr3It3ZRoX4&list=PLHLjLf2I-1I8",
+          "isShort": true
+        }
+      ]
+    },
+    {
+      "id": "equipment",
+      "title": "Small Engines & Equipment",
+      "titleEs": "Motores pequeños y equipos",
+      "playlistId": "PLJ_xgXUYc-0c",
+      "videos": []
+    }
+  ]
+}

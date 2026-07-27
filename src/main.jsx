@@ -3,20 +3,25 @@ import { createRoot } from 'react-dom/client';
 import {
   ArrowRight,
   Download,
+  ExternalLink,
   Facebook,
   FileText,
   Mail,
   Menu,
   MessageCircle,
   Phone,
+  Play,
   Plus,
   Printer,
   Settings,
   ShieldCheck,
   Users,
+  Video,
   X,
+  Youtube,
 } from 'lucide-react';
 import './styles.css';
+import youtubeCatalog from './data/youtube-videos.json';
 import {
   assets,
   business,
@@ -145,16 +150,31 @@ function ContactButtons({ t, compact = false }) {
   );
 }
 
-function Header({ lang, setLang, t }) {
+function Header({ lang, setLang, t, page = 'home' }) {
   const [open, setOpen] = useState(false);
   const switchLang = (next) => {
     setLang(next);
-    window.history.pushState({}, '', languages[next].homePath);
+    const nextPath = page === 'videos'
+      ? `${languages[next].homePath === '/' ? '' : languages[next].homePath}/videos`
+      : languages[next].homePath;
+    window.history.pushState({}, '', nextPath || '/videos');
     setOpen(false);
   };
+  const homePath = t.homePath;
+  const sectionHref = (id) => page === 'home' ? `#${id}` : `${homePath}#${id}`;
+  const navItems = [
+    [page === 'home' ? '#home' : homePath, t.nav[0]],
+    [sectionHref('services'), t.nav[1]],
+    [sectionHref('towing'), t.nav[2]],
+    [`${homePath === '/' ? '' : homePath}/videos`, t.nav[3]],
+    [sectionHref('request'), t.nav[4]],
+    [sectionHref('team'), t.nav[5]],
+    [sectionHref('faq'), t.nav[6]],
+    [sectionHref('contact'), t.nav[7]],
+  ];
   return (
     <header className="site-header">
-      <a className="brand" href={t.homePath} onClick={(event) => event.preventDefault()}>
+      <a className="brand" href={t.homePath}>
         <img src={assets.profile} alt="" />
         <span>{business.name}</span>
       </a>
@@ -162,9 +182,9 @@ function Header({ lang, setLang, t }) {
         {open ? <X /> : <Menu />}
       </button>
       <nav className={open ? 'nav nav-open' : 'nav'}>
-        {['home', 'services', 'towing', 'request', 'team', 'faq', 'contact'].map((id, index) => (
-          <a key={id} href={`#${id}`} onClick={() => setOpen(false)}>
-            {t.nav[index]}
+        {navItems.map(([href, label]) => (
+          <a key={href} href={href} onClick={() => setOpen(false)}>
+            {label}
           </a>
         ))}
         <a href="/admin">Admin</a>
@@ -249,6 +269,203 @@ function InfoBands({ t }) {
           </article>
         </div>
       </section>
+    </>
+  );
+}
+
+const videoCopy = {
+  en: {
+    eyebrow: 'From the shop',
+    title: 'Videos & Projects',
+    intro: 'Real mechanical projects, diagnostics, repairs, and equipment work from our YouTube playlists.',
+    viewAll: 'View All Videos',
+    visitChannel: 'Visit YouTube Channel',
+    openYoutube: 'Open in YouTube',
+    play: 'Play video',
+    all: 'All Videos',
+    loadMore: 'Load More',
+    empty: 'New projects from this playlist will appear here when they are published.',
+    pageIntro: 'Browse real automotive, marine, powersports, and equipment projects. Select a video to watch it here.',
+    short: 'Short',
+  },
+  es: {
+    eyebrow: 'Desde el taller',
+    title: 'Videos y Proyectos',
+    intro: 'Proyectos reales de mecánica, diagnósticos, reparaciones y equipos desde nuestras playlists de YouTube.',
+    viewAll: 'Ver Todos los Videos',
+    visitChannel: 'Visitar Canal de YouTube',
+    openYoutube: 'Abrir en YouTube',
+    play: 'Reproducir video',
+    all: 'Todos los Videos',
+    loadMore: 'Cargar Más',
+    empty: 'Los nuevos proyectos de esta playlist aparecerán aquí cuando sean publicados.',
+    pageIntro: 'Explora proyectos reales de autos, marina, powersports y equipos. Selecciona un video para verlo aqui.',
+    short: 'Short',
+  },
+};
+
+function uniqueVideos(categories) {
+  const seen = new Set();
+  return categories
+    .flatMap((category) => category.videos)
+    .filter((video) => !seen.has(video.id) && seen.add(video.id));
+}
+
+function VideoPlayer({ video }) {
+  if (!video) return null;
+  return (
+    <div className="video-player">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${video.id}?rel=0&list=${video.playlistId}`}
+        title={video.title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+      />
+    </div>
+  );
+}
+
+function VideoThumbnail({ video, copy, onPlay }) {
+  return (
+    <article className="video-card">
+      <button type="button" className="video-thumbnail" onClick={() => onPlay(video)} aria-label={`${copy.play}: ${video.title}`}>
+        <img src={video.thumbnail} alt="" loading="lazy" />
+        <span className="video-play"><Play fill="currentColor" size={22} /></span>
+        <span className="video-duration">{video.isShort ? copy.short : video.duration}</span>
+      </button>
+      <div className="video-card-body">
+        <h3>{video.title}</h3>
+        <a href={video.youtubeUrl} target="_blank" rel="noreferrer">
+          {copy.openYoutube} <ExternalLink size={15} />
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function VideosHomeSection({ lang, t }) {
+  const copy = videoCopy[lang];
+  const videos = uniqueVideos(youtubeCatalog.categories);
+  const [featured, setFeatured] = useState(videos[0]);
+  if (!featured) return null;
+  return (
+    <section id="videos" className="section videos-home">
+      <div className="section-heading">
+        <p className="eyebrow">{copy.eyebrow}</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.intro}</p>
+      </div>
+      <div className="video-feature-layout">
+        <div>
+          <VideoPlayer video={featured} />
+          <h3 className="featured-video-title">{featured.title}</h3>
+        </div>
+        <div className="video-recent-grid">
+          {videos.slice(0, 3).map((video) => (
+            <VideoThumbnail key={video.id} video={video} copy={copy} onPlay={setFeatured} />
+          ))}
+        </div>
+      </div>
+      <div className="video-section-actions">
+        <a className="btn btn-primary" href={`${t.homePath === '/' ? '' : t.homePath}/videos`}>
+          <Video size={18} /> {copy.viewAll}
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function VideosPage({ lang, setLang }) {
+  const t = languages[lang];
+  const copy = videoCopy[lang];
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [visibleCount, setVisibleCount] = useState(4);
+  const categories = youtubeCatalog.categories;
+  const filteredCategories = activeCategory === 'all'
+    ? categories
+    : categories.filter((category) => category.id === activeCategory);
+  const videos = uniqueVideos(filteredCategories);
+  const [featured, setFeatured] = useState(() => uniqueVideos(categories)[0]);
+
+  const chooseCategory = (categoryId) => {
+    setActiveCategory(categoryId);
+    setVisibleCount(4);
+    const firstVideo = uniqueVideos(
+      categoryId === 'all' ? categories : categories.filter((category) => category.id === categoryId),
+    )[0];
+    if (firstVideo) setFeatured(firstVideo);
+  };
+
+  const playVideo = (video) => {
+    setFeatured(video);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <Header lang={lang} setLang={setLang} t={t} page="videos" />
+      <main className="videos-page">
+        <section className="videos-page-hero">
+          <div>
+            <p className="eyebrow">Car Daddy By Torres LLC</p>
+            <h1>{copy.title}</h1>
+            <p>{copy.pageIntro}</p>
+            <a className="btn btn-light" href={youtubeCatalog.channelUrl} target="_blank" rel="noreferrer">
+              <Youtube size={19} /> {copy.visitChannel}
+            </a>
+          </div>
+          <div>
+            <VideoPlayer video={featured} />
+            {featured ? <h2>{featured.title}</h2> : null}
+          </div>
+        </section>
+
+        <section className="section video-library">
+          <div className="video-tabs" role="tablist" aria-label={copy.title}>
+            <button type="button" className={activeCategory === 'all' ? 'active' : ''} onClick={() => chooseCategory('all')}>
+              {copy.all}
+            </button>
+            {categories.map((category) => (
+              <button
+                type="button"
+                key={category.id}
+                className={activeCategory === category.id ? 'active' : ''}
+                onClick={() => chooseCategory(category.id)}
+              >
+                {lang === 'es' ? category.titleEs : category.title}
+              </button>
+            ))}
+          </div>
+
+          {videos.length ? (
+            <div className="video-library-grid">
+              {videos.slice(0, visibleCount).map((video) => (
+                <VideoThumbnail key={video.id} video={video} copy={copy} onPlay={playVideo} />
+              ))}
+            </div>
+          ) : (
+            <div className="video-empty">
+              <Youtube size={34} />
+              <p>{copy.empty}</p>
+            </div>
+          )}
+
+          {visibleCount < videos.length ? (
+            <div className="video-section-actions">
+              <button type="button" className="btn btn-primary" onClick={() => setVisibleCount((count) => count + 4)}>
+                <Plus size={18} /> {copy.loadMore}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="video-section-actions">
+            <a className="btn btn-muted" href={youtubeCatalog.channelUrl} target="_blank" rel="noreferrer">
+              <Youtube size={19} /> {copy.visitChannel}
+            </a>
+          </div>
+        </section>
+      </main>
+      <Footer t={t} lang={lang} setLang={setLang} />
     </>
   );
 }
@@ -447,6 +664,7 @@ function LandingApp({ lang, setLang }) {
         <Hero t={t} />
         <ServicesSection lang={lang} t={t} />
         <InfoBands t={t} />
+        <VideosHomeSection lang={lang} t={t} />
         <RequestForm lang={lang} t={t} />
         <TeamForm lang={lang} t={t} />
         <FAQ lang={lang} t={t} />
@@ -755,10 +973,13 @@ function AdminApp({ lang }) {
 function Root() {
   const [lang, setLang] = useState(getLangFromPath());
   const isAdmin = window.location.pathname.startsWith('/admin');
+  const isVideos = /^\/(?:es\/)?videos\/?$/.test(window.location.pathname);
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
-  return isAdmin ? <AdminApp lang={lang} /> : <LandingApp lang={lang} setLang={setLang} />;
+  if (isAdmin) return <AdminApp lang={lang} />;
+  if (isVideos) return <VideosPage lang={lang} setLang={setLang} />;
+  return <LandingApp lang={lang} setLang={setLang} />;
 }
 
 createRoot(document.getElementById('root')).render(<Root />);
