@@ -38,8 +38,15 @@ import {
   listRecords,
   mailTo,
   updateRecord,
-  uploadResume,
 } from './lib/storage';
+import { PlatformPage, getPlatformRoute } from './platform/PlatformPages';
+import { PlatformAdmin, platformAdminNav } from './platform/PlatformAdmin';
+import {
+  authenticateAdmin,
+  isPlatformMockMode,
+  restoreAdminSession,
+  signOutAdmin,
+} from './platform/storage';
 
 const initialLead = {
   preferred_language: 'English',
@@ -57,24 +64,6 @@ const initialLead = {
   issue_description: '',
   urgency: 'Emergency / Now',
   photo_urls: [],
-  status: 'New',
-  internal_notes: '',
-};
-
-const initialApplication = {
-  preferred_language: 'English',
-  full_name: '',
-  phone: '',
-  email: '',
-  city_zip: '',
-  position_interest: 'Mechanic',
-  experience_summary: '',
-  skills: '',
-  has_tools: 'Yes',
-  has_transportation: 'Yes',
-  availability: 'Full-time',
-  resume_url: '',
-  additional_notes: '',
   status: 'New',
   internal_notes: '',
 };
@@ -154,23 +143,24 @@ function Header({ lang, setLang, t, page = 'home' }) {
   const [open, setOpen] = useState(false);
   const switchLang = (next) => {
     setLang(next);
+    const nextBase = languages[next].homePath === '/' ? '' : languages[next].homePath;
+    const platformPath = window.location.pathname.replace(/^\/es(?=\/)/, '');
     const nextPath = page === 'videos'
-      ? `${languages[next].homePath === '/' ? '' : languages[next].homePath}/videos`
-      : languages[next].homePath;
+      ? `${nextBase}/videos`
+      : page === 'platform' ? `${nextBase}${platformPath}` : languages[next].homePath;
     window.history.pushState({}, '', nextPath || '/videos');
     setOpen(false);
   };
   const homePath = t.homePath;
   const sectionHref = (id) => page === 'home' ? `#${id}` : `${homePath}#${id}`;
+  const routeBase = homePath === '/' ? '' : homePath;
   const navItems = [
     [page === 'home' ? '#home' : homePath, t.nav[0]],
     [sectionHref('services'), t.nav[1]],
-    [sectionHref('towing'), t.nav[2]],
-    [`${homePath === '/' ? '' : homePath}/videos`, t.nav[3]],
-    [sectionHref('request'), t.nav[4]],
-    [sectionHref('team'), t.nav[5]],
-    [sectionHref('faq'), t.nav[6]],
-    [sectionHref('contact'), t.nav[7]],
+    [`${routeBase}/videos`, t.nav[2]],
+    [`${routeBase}/solicitar-servicio`, t.nav[3]],
+    [`${routeBase}/unete-a-la-red`, t.nav[4]],
+    [`${routeBase}/portal`, t.nav[5]],
   ];
   return (
     <header className="site-header">
@@ -187,7 +177,6 @@ function Header({ lang, setLang, t, page = 'home' }) {
             {label}
           </a>
         ))}
-        <a href="/admin">Admin</a>
         <div className="language-switch" aria-label="Language switcher">
           <button className={lang === 'en' ? 'active' : ''} onClick={() => switchLang('en')}>EN</button>
           <span>|</span>
@@ -210,7 +199,7 @@ function Hero({ t }) {
         <p className="hero-support">{t.hero.support}</p>
         <div className="hero-actions">
           <ContactButtons t={t} />
-          <a className="btn btn-light" href="#request">
+          <a className="btn btn-light" href={`${t.homePath === '/' ? '' : t.homePath}/solicitar-servicio`}>
             {t.buttons.request} <ArrowRight size={18} />
           </a>
         </div>
@@ -564,53 +553,23 @@ function RequestForm({ lang, t, onSaved }) {
   );
 }
 
-function TeamForm({ lang, t, onSaved }) {
-  const [form, setForm] = useState({ ...initialApplication, preferred_language: lang === 'es' ? 'Español' : 'English' });
-  const [file, setFile] = useState(null);
-  const [consent, setConsent] = useState(false);
-  const [message, setMessage] = useState('');
-  const labels = t.team.labels;
-  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
-
-  async function submit(event) {
-    event.preventDefault();
-    if (!form.full_name || !form.phone || !form.email || !form.experience_summary || !consent) {
-      setMessage(t.form.required);
-      return;
-    }
-    const resumeUrl = await uploadResume(file);
-    const saved = await insertRecord('team_applications', { ...form, resume_url: resumeUrl });
-    onSaved?.(saved);
-    setMessage(t.team.success);
-  }
-
+function NetworkSection({ lang }) {
+  const base = lang === 'es' ? '/es' : '';
   return (
-    <section id="team" className="section form-section alt">
-      <div className="section-heading">
-        <h2>{t.team.title}</h2>
-        <p>{t.team.body}</p>
+    <section id="team" className="section network-section">
+      <div className="network-section-copy">
+        <p className="eyebrow">CarDaddy Network</p>
+        <h2>{lang === 'es' ? 'Únete a la red CarDaddy' : 'Join the CarDaddy Network'}</h2>
+        <p>{lang === 'es'
+          ? 'Solicita participar como proveedor automotriz independiente. Tú decides qué oportunidades aceptar, tus horarios, precios y zona de servicio.'
+          : 'Apply as an independent automotive provider. You decide which opportunities to accept, your schedule, prices, and service area.'}</p>
+        <a className="btn btn-primary" href={`${base}/unete-a-la-red`}><Users size={18} /> {lang === 'es' ? 'Solicitar Ingreso' : 'Apply to the Network'}</a>
       </div>
-      <form className="form-grid" onSubmit={submit}>
-        <SelectField label={t.form.labels.preferred_language} value={form.preferred_language} onChange={(v) => set('preferred_language', v)} options={selectOptions.language} lang={lang} required />
-        <Field label={labels.full_name} required><input value={form.full_name} onChange={(e) => set('full_name', e.target.value)} required /></Field>
-        <Field label={labels.phone} required><input value={form.phone} onChange={(e) => set('phone', e.target.value)} required /></Field>
-        <Field label={labels.email} required><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required /></Field>
-        <Field label={labels.city_zip} required><input value={form.city_zip} onChange={(e) => set('city_zip', e.target.value)} required /></Field>
-        <SelectField label={labels.position_interest} value={form.position_interest} onChange={(v) => set('position_interest', v)} options={selectOptions.positions} lang={lang} required />
-        <SelectField label={labels.has_tools} value={form.has_tools} onChange={(v) => set('has_tools', v)} options={selectOptions.yesNo} lang={lang} required />
-        <SelectField label={labels.has_transportation} value={form.has_transportation} onChange={(v) => set('has_transportation', v)} options={selectOptions.yesNo} lang={lang} required />
-        <SelectField label={labels.availability} value={form.availability} onChange={(v) => set('availability', v)} options={selectOptions.availability} lang={lang} required />
-        <Field label={labels.resume}><input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setFile(e.target.files?.[0])} /></Field>
-        <label className="field full"><span>{labels.experience_summary} *</span><textarea value={form.experience_summary} onChange={(e) => set('experience_summary', e.target.value)} required /></label>
-        <label className="field full"><span>{labels.skills}</span><textarea value={form.skills} onChange={(e) => set('skills', e.target.value)} /></label>
-        <label className="field full"><span>{labels.additional_notes}</span><textarea value={form.additional_notes} onChange={(e) => set('additional_notes', e.target.value)} /></label>
-        <label className="checkbox full">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>{t.team.consent}</span>
-        </label>
-        <button className="btn btn-primary full" type="submit">{t.buttons.apply}</button>
-        {message ? <p className="status-message full">{message}</p> : null}
-      </form>
+      <div className="network-points">
+        <article><strong>01</strong><span>{lang === 'es' ? 'Perfil y especialidades' : 'Profile and specialties'}</span></article>
+        <article><strong>02</strong><span>{lang === 'es' ? 'Disponibilidad propia' : 'Your own availability'}</span></article>
+        <article><strong>03</strong><span>{lang === 'es' ? 'Oportunidades compatibles' : 'Compatible opportunities'}</span></article>
+      </div>
     </section>
   );
 }
@@ -666,7 +625,7 @@ function LandingApp({ lang, setLang }) {
         <InfoBands t={t} />
         <VideosHomeSection lang={lang} t={t} />
         <RequestForm lang={lang} t={t} />
-        <TeamForm lang={lang} t={t} />
+        <NetworkSection lang={lang} />
         <FAQ lang={lang} t={t} />
       </main>
       <Footer t={t} lang={lang} setLang={setLang} />
@@ -851,10 +810,12 @@ function DataTable({ title, rows, fields, statuses, table, reload }) {
 
 function AdminApp({ lang }) {
   const t = languages[lang];
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [allowed, setAllowed] = useState(sessionStorage.getItem('carDaddy.admin') === 'true');
+  const [allowed, setAllowed] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState('');
-  const [active, setActive] = useState('dashboard');
+  const [active, setActive] = useState('operations');
   const [leads, setLeads] = useState([]);
   const [apps, setApps] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -869,54 +830,66 @@ function AdminApp({ lang }) {
     if (allowed) reload();
   }, [allowed]);
 
-  function unlock(event) {
+  useEffect(() => {
+    restoreAdminSession()
+      .then((profile) => setAllowed(Boolean(profile)))
+      .finally(() => setCheckingSession(false));
+  }, []);
+
+  async function unlock(event) {
     event.preventDefault();
-    const expected = import.meta.env.VITE_ADMIN_PASSWORD;
-    if (password === expected) {
-      sessionStorage.setItem('carDaddy.admin', 'true');
+    try {
+      await authenticateAdmin(email, password);
       setAllowed(true);
       setError('');
-    } else {
-      setError(t.admin.badPassword);
+    } catch (authError) {
+      setError(authError.message || t.admin.badPassword);
     }
   }
+
+  if (checkingSession) return <main className="admin-login"><p className="mock-banner">Checking secure session...</p></main>;
 
   if (!allowed) {
     return (
       <main className="admin-login">
         <form onSubmit={unlock}>
           <ShieldCheck size={42} />
-          <h1>{t.admin.title}</h1>
+          <h1>CarDaddy Admin</h1>
+          <Field label="Admin email"><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required={!isPlatformMockMode} /></Field>
           <Field label={t.admin.password}><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-          <button className="btn btn-primary">{t.buttons.unlock}</button>
+          <button className="btn btn-primary"><ShieldCheck size={18} /> {t.buttons.unlock}</button>
           {error ? <p className="status-message">{error}</p> : null}
-          <p className="small">MVP password gate. Set VITE_ADMIN_PASSWORD before deploying.</p>
+          <p className="small">{isPlatformMockMode
+            ? 'Local test mode. Password: local-test-only. Uses synthetic browser data and sends nothing.'
+            : 'Supabase Auth and an active administrator role are required.'}</p>
         </form>
       </main>
     );
   }
 
+  const navItems = [
+    ...platformAdminNav,
+    ['leads', 'Legacy Requests'],
+    ['applications', 'Legacy Applications'],
+    ['invoices', 'Invoices / Receipts'],
+    ['settings', 'Settings'],
+  ];
+
   return (
     <main className="admin-layout">
       <aside>
         <h1>{business.name}</h1>
-        {['dashboard', 'leads', 'applications', 'invoices', 'settings'].map((key, index) => (
+        {navItems.map(([key, label], index) => (
           <button key={key} className={active === key ? 'active' : ''} onClick={() => setActive(key)}>
-            {index === 0 ? <ShieldCheck /> : index === 2 ? <Users /> : index === 4 ? <Settings /> : <FileText />}
-            {t.admin.sections[index]}
+            {index === 0 ? <ShieldCheck /> : key === 'providers' ? <Users /> : key === 'settings' ? <Settings /> : <FileText />}
+            {label}
           </button>
         ))}
         <a href={languages[lang].homePath}>Back to site</a>
+        <button type="button" onClick={async () => { await signOutAdmin(); setAllowed(false); }}>Sign out</button>
       </aside>
       <section className="admin-main">
-        {!isSupabaseConfigured ? <p className="mock-banner">{t.admin.mockNotice}</p> : null}
-        {active === 'dashboard' ? (
-          <div className="dashboard-grid">
-            <article><strong>{leads.length}</strong><span>Service Requests</span></article>
-            <article><strong>{apps.length}</strong><span>Team Applications</span></article>
-            <article><strong>{invoices.length}</strong><span>Invoices</span></article>
-          </div>
-        ) : null}
+        {['operations', 'cases', 'providers', 'complaints'].includes(active) ? <PlatformAdmin active={active} /> : null}
         {active === 'leads' ? (
           <DataTable
             title="Service Requests / Leads"
@@ -960,9 +933,11 @@ function AdminApp({ lang }) {
         {active === 'settings' ? (
           <section className="admin-table">
             <h2>Settings / Configuration</h2>
-            <p>Supabase: {isSupabaseConfigured ? 'Configured' : 'Mock/local mode'}</p>
-            <p>Instagram placeholder: {business.instagram}</p>
-            <p>Tax rate is set per invoice. Configure defaults later in Supabase or a settings table.</p>
+            <p>Supabase: {isSupabaseConfigured ? 'Configured; authenticated admin policies required' : 'Mock/local mode'}</p>
+            <p>Notifications: internal templates only. Email, SMS, push, and WhatsApp delivery are disabled.</p>
+            <p>Membership billing: disabled for the free beta.</p>
+            <p>Assignment: manual in Phase 1. Compatibility scoring is advisory until Phase 3.</p>
+            <p>Legacy records: {leads.length} requests, {apps.length} applications, {invoices.length} invoices.</p>
           </section>
         ) : null}
       </section>
@@ -974,11 +949,13 @@ function Root() {
   const [lang, setLang] = useState(getLangFromPath());
   const isAdmin = window.location.pathname.startsWith('/admin');
   const isVideos = /^\/(?:es\/)?videos\/?$/.test(window.location.pathname);
+  const platformRoute = getPlatformRoute(window.location.pathname);
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
   if (isAdmin) return <AdminApp lang={lang} />;
   if (isVideos) return <VideosPage lang={lang} setLang={setLang} />;
+  if (platformRoute) return <PlatformPage route={platformRoute} lang={lang} setLang={setLang} header={Header} footer={Footer} />;
   return <LandingApp lang={lang} setLang={setLang} />;
 }
 

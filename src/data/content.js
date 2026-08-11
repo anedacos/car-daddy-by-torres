@@ -44,7 +44,7 @@ export const languages = {
     code: 'en',
     homePath: '/',
     otherPath: '/es',
-    nav: ['Home', 'Services', 'Towing', 'Videos & Projects', 'Request Service', 'Join Our Team', 'FAQ', 'Contact'],
+    nav: ['Home', 'Services', 'Videos & Projects', 'Request Service', 'Join the Network', 'Portal'],
     hero: {
       eyebrow: '24/7 mobile service near ZIP 39503',
       title: '24/7 Mobile Mechanic & Car Dolly Towing',
@@ -149,7 +149,7 @@ export const languages = {
     code: 'es',
     homePath: '/es',
     otherPath: '/',
-    nav: ['Inicio', 'Servicios', 'Remolque', 'Videos y Proyectos', 'Solicitar Servicio', 'Únete al Equipo', 'FAQ', 'Contacto'],
+    nav: ['Inicio', 'Servicios', 'Videos y Proyectos', 'Solicitar Servicio', 'Únete a la Red', 'Portal'],
     hero: {
       eyebrow: 'Servicio móvil 24/7 cerca del ZIP 39503',
       title: 'Servicio de Mecánico Móvil y Remolque 24/7',
