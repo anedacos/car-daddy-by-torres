@@ -289,7 +289,8 @@ const initialProvider = {
   available_days: [], availability_schedule: {}, immediate_available: false, scheduled_available: true,
   availability_start_mode: 'Now', availability_start_date: '',
   night_available: false, emergency_available: false, all_day_available: false,
-  minimum_inspection_fee: '', minimum_mobilization_fee: '', payment_methods: [],
+  minimum_inspection_fee: '', payment_methods: [],
+  no_advance_fee_acknowledged: false,
   terms_accepted: false, privacy_accepted: false, independent_provider_acknowledged: false,
   media_publicity_consent: false,
 };
@@ -329,6 +330,7 @@ const demoProvider = {
   emergency_available: true,
   minimum_inspection_fee: '75',
   payment_methods: ['Cash', 'Zelle', 'Cash App', 'Card'],
+  no_advance_fee_acknowledged: true,
   terms_accepted: true,
   privacy_accepted: true,
   independent_provider_acknowledged: true,
@@ -475,8 +477,8 @@ function ProviderApplicationPage({ lang, shell }) {
       `Link evidence to every selected service. Still unsupported: ${unsupportedServices.join(', ')}.`,
       `Vincula evidencia con cada servicio seleccionado. Aún sin sustento: ${unsupportedServices.map((service) => optionLabel(lang, service)).join(', ')}.`,
     );
-    if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged) {
-      evidenceErrors.required_consents = tx(lang, 'Accept the required terms and independent-provider acknowledgement.', 'Acepta los términos requeridos y la confirmación de proveedor independiente.');
+    if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged || !form.no_advance_fee_acknowledged) {
+      evidenceErrors.required_consents = tx(lang, 'Accept the required terms, payment policy, and independent-provider acknowledgement.', 'Acepta los términos requeridos, la política de cobro y la confirmación de proveedor independiente.');
     }
     if (Object.keys(evidenceErrors).length) {
       showErrors(evidenceErrors);
@@ -531,8 +533,27 @@ function ProviderApplicationPage({ lang, shell }) {
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy Network" title={tx(lang, 'Join the CarDaddy Network', 'Únete a la red CarDaddy')} body={tx(lang, 'Apply as an independent automotive provider. Your profile and private evidence are reviewed before approval.', 'Solicita participar como proveedor automotriz independiente. Tu perfil y evidencia privada se revisan antes de aprobarse.')} />
       {isDemoMode ? <div className="demo-mode-banner"><AlertTriangle size={20} /><div><strong>{tx(lang, 'Temporary review mode', 'Modo temporal de revisión')}</strong><span>{tx(lang, 'Every step contains fictional test data. Demo evidence loads automatically on the final step and any submitted application is clearly marked [DEMO].', 'Todos los pasos contienen datos ficticios de prueba. La evidencia demo se carga automáticamente en el último paso y cualquier solicitud enviada queda marcada claramente como [DEMO].')}</span></div></div> : null}
-      <WizardProgress step={step} labels={tx(lang, ['Contact', 'Services', 'Availability', 'Evidence'], ['Contacto', 'Servicios', 'Disponibilidad', 'Evidencia'])} />
-      <form className="platform-wizard" onSubmit={submit}>
+      <section className={`provider-payment-policy ${form.no_advance_fee_acknowledged ? 'is-accepted' : ''}`} aria-labelledby="provider-payment-policy-title">
+        <div className="provider-payment-policy-icon"><ShieldCheck size={28} /></div>
+        <div className="provider-payment-policy-copy">
+          <p className="eyebrow">{tx(lang, 'Required payment policy', 'Política de cobro obligatoria')}</p>
+          <h2 id="provider-payment-policy-title">{tx(lang, 'No payment before you arrive', 'Ningún cobro antes de llegar')}</h2>
+          <p>{tx(lang, 'CarDaddy builds trust by never asking a customer to pay a provider in advance. Do not request deposits, travel fees, mobilization fees, or any other payment before you physically arrive at the service location.', 'CarDaddy genera confianza sin pedirle al cliente pagos por adelantado. No solicites depósitos, tarifas de viaje, tarifas de movilización ni ningún otro pago antes de llegar físicamente al lugar del servicio.')}</p>
+          <div className="provider-payment-sequence">
+            <span><b>1</b>{tx(lang, 'Agree on the inspection fee with the customer before the visit.', 'Acuerda con el cliente la tarifa de inspección antes de la visita.')}</span>
+            <span><b>2</b>{tx(lang, 'Arrive physically at the service location.', 'Llega físicamente al lugar del servicio.')}</span>
+            <span><b>3</b>{tx(lang, 'Collect the agreed inspection fee before beginning the inspection.', 'Cobra la tarifa de inspección acordada antes de comenzar la inspección.')}</span>
+          </div>
+          <p className="provider-payment-warning">{tx(lang, 'If you are not willing to work under this payment model, please do not submit an application.', 'Si no estás dispuesto a trabajar bajo esta modalidad de cobro, por favor no llenes la solicitud.')}</p>
+          <label className="provider-payment-acceptance">
+            <input type="checkbox" checked={form.no_advance_fee_acknowledged} onChange={(event) => set('no_advance_fee_acknowledged', event.target.checked)} />
+            <span><strong>{tx(lang, 'I understand and agree', 'Entiendo y acepto')}</strong><small>{tx(lang, 'I will follow this no-advance-payment policy for every CarDaddy request.', 'Cumpliré esta política de cero pagos por adelantado en cada solicitud de CarDaddy.')}</small></span>
+          </label>
+        </div>
+      </section>
+      {form.no_advance_fee_acknowledged ? <>
+        <WizardProgress step={step} labels={tx(lang, ['Contact', 'Services', 'Availability', 'Evidence'], ['Contacto', 'Servicios', 'Disponibilidad', 'Evidencia'])} />
+        <form className="platform-wizard" onSubmit={submit}>
         {step === 1 ? <div className="form-grid">
           <Field label={tx(lang, 'Full name', 'Nombre completo')} required fieldKey="full_name" invalid={Boolean(fieldErrors.full_name)} error={fieldErrors.full_name}><input value={form.full_name} onChange={(e) => set('full_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Business name, optional', 'Nombre comercial, opcional')}><input value={form.business_name} onChange={(e) => set('business_name', e.target.value)} /></Field>
@@ -558,10 +579,13 @@ function ProviderApplicationPage({ lang, shell }) {
             <summary>{tx(lang, 'Optional: services you prefer not to perform', 'Opcional: servicios que prefieres no realizar')}</summary>
             <CheckboxGroup lang={lang} label={tx(lang, 'Do not match me with these services', 'No asignarme estos servicios')} options={[...serviceTypes, 'Bodywork', 'Paint']} values={form.services_not_offered} onChange={(value) => set('services_not_offered', value)} />
           </details>
+          <div className="inspection-fee-field full">
           <Field
             label={tx(lang, 'Minimum inspection fee', 'Tarifa mínima de inspección')}
-            hint={tx(lang, 'This is the minimum amount you charge after arriving at the customer location to inspect and diagnose the vehicle. You still agree on the amount with the customer before the visit.', 'Es el monto mínimo que cobras al llegar a la ubicación del cliente para inspeccionar y diagnosticar el vehículo. El valor se acuerda con el cliente antes de la visita.')}
+            hint={tx(lang, 'Agree on this amount before the visit. It may only be collected after you physically arrive and before the inspection begins. Travel and mobilization fees are not permitted.', 'Acuerda este valor antes de la visita. Solo puede cobrarse después de que llegues físicamente y antes de comenzar la inspección. No se permiten tarifas de viaje ni de movilización.')}
           ><input type="number" min="0" step="0.01" placeholder="0.00" value={form.minimum_inspection_fee} onChange={(e) => set('minimum_inspection_fee', e.target.value)} /></Field>
+          <div className="inspection-fee-reminder"><ShieldCheck size={18} /><span>{tx(lang, 'No advance payment. No travel or mobilization fee.', 'Sin pagos por adelantado. Sin tarifa de viaje ni movilización.')}</span></div>
+          </div>
           <CheckboxGroup lang={lang} label={tx(lang, 'Accepted payment methods', 'Métodos de pago aceptados')} options={paymentMethods} values={form.payment_methods} onChange={(value) => set('payment_methods', value)} />
         </div> : null}
 
@@ -613,6 +637,7 @@ function ProviderApplicationPage({ lang, shell }) {
           <div className={`consent-stack full ${fieldErrors.required_consents ? 'field-invalid' : ''}`} data-field="required_consents">
             <BooleanChoice label={tx(lang, 'I accept the draft network terms and privacy notice.', 'Acepto los términos preliminares de la red y el aviso de privacidad.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />
             <BooleanChoice label={tx(lang, 'I understand that I am applying as an independent provider, not as a CarDaddy employee.', 'Entiendo que solicito participar como proveedor independiente, no como empleado de CarDaddy.')} checked={form.independent_provider_acknowledged} onChange={(value) => set('independent_provider_acknowledged', value)} />
+            <div className="payment-policy-confirmed"><Check size={17} /><span>{tx(lang, 'Required no-advance-payment policy accepted.', 'Política obligatoria de cero pagos por adelantado aceptada.')}</span></div>
             <BooleanChoice label={tx(lang, 'Optional media permission', 'Permiso opcional de contenido')} description={tx(lang, 'I confirm I have the right to share the submitted media and grant CarDaddy non-exclusive permission to use selected work samples on its website and social channels. Nothing is published automatically.', 'Confirmo que tengo derecho a compartir el contenido enviado y otorgo a CarDaddy permiso no exclusivo para usar trabajos seleccionados en su sitio web y redes sociales. Nada se publica automáticamente.')} checked={form.media_publicity_consent} onChange={(value) => set('media_publicity_consent', value)} />
             {fieldErrors.required_consents ? <small className="field-error" role="alert">{fieldErrors.required_consents}</small> : null}
           </div>
@@ -621,7 +646,8 @@ function ProviderApplicationPage({ lang, shell }) {
 
         {message ? <p className="status-message">{message}</p> : null}
         <WizardActions step={step} total={4} back={() => setStep((current) => current - 1)} next={next} submitLabel={tx(lang, 'Submit Application', 'Enviar Solicitud')} busy={busy} lang={lang} />
-      </form>
+        </form>
+      </> : null}
     </ShellComponent>
   );
 }

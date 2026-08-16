@@ -260,6 +260,10 @@ function ProviderReviews({ providers, reload }) {
                 <div className="service-group"><strong>Specialties</strong><ServiceTags items={provider.specialties} /></div>
                 {provider.services_offered?.length ? <div className="service-group"><strong>Services performed</strong><ServiceTags items={provider.services_offered} /></div> : null}
                 <div className="service-group"><strong>Vehicle types served</strong><ServiceTags items={provider.vehicle_types_served} /></div>
+                <div className={`payment-policy-review ${provider.no_advance_fee_acknowledged ? 'accepted' : 'legacy'}`}>
+                  {provider.no_advance_fee_acknowledged ? <Check size={18} /> : <ShieldAlert size={18} />}
+                  <div><strong>{provider.no_advance_fee_acknowledged ? 'No-advance-payment policy accepted' : 'Payment policy acknowledgment not captured'}</strong><span>{provider.no_advance_fee_acknowledged ? 'Inspection fee may be collected only after arrival. No travel or mobilization fee is permitted.' : 'This application predates the required payment-policy acknowledgment. Confirm the policy directly before approval.'}</span></div>
+                </div>
               </section>
 
               <section className="review-section">
