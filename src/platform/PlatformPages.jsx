@@ -28,6 +28,7 @@ import {
   isValidZipCode,
   launchStates,
   specialties,
+  validateProviderSkillEvidence,
 } from './domain';
 import {
   isPlatformMockMode,
@@ -340,7 +341,9 @@ const initialProvider = {
   media_publicity_consent: false,
 };
 
-const createWorkSamples = () => Array.from({ length: 3 }, () => ({ description: '', services: [], photos: [], videos: [] }));
+const createSkillEvidenceItem = () => ({
+  description: '', vehicle_type: '', vehicle_year: '', vehicle_make_model: '', photos: [], videos: [], certificates: [],
+});
 
 const demoServices = ['Diagnostics', 'Mechanical repair', 'Electrical repair', 'No-start help', 'Brakes', 'Roadside assistance', 'Car dolly towing'];
 
@@ -356,7 +359,7 @@ const demoProvider = {
   max_travel_hours: '1',
   languages: ['English', 'Spanish'],
   years_experience: 9,
-  specialties: ['General automotive mechanics', 'Electromechanics', 'Electrical diagnostics', 'Computer diagnostics', 'Engine', 'Brakes', 'Batteries', 'Maintenance', 'Roadside assistance'],
+  specialties: ['Electrical diagnostics', 'Engine', 'Air conditioning'],
   vehicle_types_served: ['Car', 'Light truck', 'Diesel truck', 'Light equipment'],
   services_offered: demoServices,
   services_not_offered: ['Other'],
@@ -382,29 +385,62 @@ const demoProvider = {
   media_publicity_consent: true,
 };
 
-const createDemoWorkSamples = () => [
-  {
-    description: 'Diagnosed an intermittent no-start condition, repaired damaged wiring in the starter circuit, and verified reliable operation.',
-    services: ['Diagnostics', 'Electrical repair', 'No-start help'],
-    photos: [], videos: [],
-  },
-  {
-    description: 'Inspected the braking system, replaced worn front brake components, and completed a road test to confirm safe braking.',
-    services: ['Mechanical repair', 'Brakes'],
-    photos: [], videos: [],
-  },
-  {
-    description: 'Secured a disabled vehicle on a car dolly and transported it safely after confirming the vehicle could not continue under its own power.',
-    services: ['Roadside assistance', 'Car dolly towing'],
-    photos: [], videos: [],
-  },
-];
+const createDemoSkillEvidence = () => ({
+  'Electrical diagnostics': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2017', vehicle_make_model: 'Honda Accord', description: 'Diagnosed an intermittent no-start condition, repaired damaged wiring in the starter circuit, and verified reliable operation.' },
+  Engine: { ...createSkillEvidenceItem(), vehicle_type: 'Light truck', vehicle_year: '2015', vehicle_make_model: 'Ford F-150', description: 'Performed compression and fuel-system tests, replaced the failed component, and confirmed normal engine operation.' },
+  'Air conditioning': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2019', vehicle_make_model: 'Toyota Camry', description: 'Found a refrigerant leak, replaced the damaged seal, evacuated and recharged the system, and verified vent temperature.' },
+});
 
 async function publicAssetFile(path, name) {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`Unable to load demo file: ${name}`);
   const blob = await response.blob();
   return new File([blob], name, { type: blob.type || 'image/jpeg' });
+}
+
+function createDemoVideoFile() {
+  return new Promise((resolve, reject) => {
+    if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+      reject(new Error('This browser cannot create the temporary demonstration video.'));
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 360;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      reject(new Error('Unable to prepare the temporary demonstration video.'));
+      return;
+    }
+    const stream = canvas.captureStream(12);
+    const chunks = [];
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const startedAt = performance.now();
+    const draw = () => {
+      const elapsed = performance.now() - startedAt;
+      context.fillStyle = '#101418';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#f5b301';
+      context.fillRect(0, 0, Math.min(canvas.width, elapsed / 2), 12);
+      context.fillStyle = '#ffffff';
+      context.font = '700 30px Arial';
+      context.fillText('CarDaddy demo evidence', 130, 165);
+      context.fillStyle = '#f5b301';
+      context.font = '700 20px Arial';
+      context.fillText('FICTIONAL TEST VIDEO', 196, 205);
+    };
+    const timer = window.setInterval(draw, 80);
+    recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+    recorder.onerror = () => reject(new Error('Unable to create the temporary demonstration video.'));
+    recorder.onstop = () => {
+      window.clearInterval(timer);
+      stream.getTracks().forEach((track) => track.stop());
+      resolve(new File(chunks, 'demo-skill-evidence.webm', { type: 'video/webm' }));
+    };
+    draw();
+    recorder.start();
+    window.setTimeout(() => recorder.stop(), 1200);
+  });
 }
 
 function ProviderApplicationPage({ lang, shell }) {
@@ -414,8 +450,7 @@ function ProviderApplicationPage({ lang, shell }) {
   const [form, setForm] = useState(() => isDemoMode ? { ...demoProvider } : { ...initialProvider });
   const [toolPhotos, setToolPhotos] = useState([]);
   const [equipmentPhotos, setEquipmentPhotos] = useState([]);
-  const [workSamples, setWorkSamples] = useState(isDemoMode ? createDemoWorkSamples : createWorkSamples);
-  const [certifications, setCertifications] = useState([]);
+  const [skillEvidence, setSkillEvidence] = useState(isDemoMode ? createDemoSkillEvidence : () => ({}));
   const [insurance, setInsurance] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState('');
@@ -428,16 +463,21 @@ function ProviderApplicationPage({ lang, shell }) {
       publicAssetFile('/media/04_final_web/diagnostics_tools.jpg', 'demo-organized-tools.jpg'),
       publicAssetFile('/media/13_ai_professional_replacements/mobile_ai.jpg', 'demo-service-vehicle.jpg'),
       publicAssetFile('/media/13_ai_professional_replacements/diagnostics_ai.jpg', 'demo-electrical-diagnosis.jpg'),
-      publicAssetFile('/media/04_final_web/brake_service_clean.jpg', 'demo-brake-repair.jpg'),
-      publicAssetFile('/media/13_ai_professional_replacements/tow_dolly_ai.jpg', 'demo-car-dolly-job.jpg'),
+      publicAssetFile('/media/04_final_web/gas_vehicle_repair.jpg', 'demo-engine-repair.jpg'),
+      publicAssetFile('/media/04_final_web/electromechanical_troubleshooting.jpg', 'demo-ac-repair.jpg'),
       publicAssetFile('/media/10_logo_perfil/profile_logo_recommended.jpg', 'demo-certification.jpg'),
       publicAssetFile('/media/09_hero_banner/hero_clean_mechanic.jpg', 'demo-insurance-proof.jpg'),
-    ]).then(([toolsFile, equipmentFile, jobOne, jobTwo, jobThree, certificationFile, insuranceFile]) => {
+      createDemoVideoFile(),
+    ]).then(([toolsFile, equipmentFile, jobOne, jobTwo, jobThree, certificationFile, insuranceFile, demoVideo]) => {
       if (!active) return;
       setToolPhotos([toolsFile]);
       setEquipmentPhotos([equipmentFile]);
-      setWorkSamples((current) => current.map((sample, index) => ({ ...sample, photos: [[jobOne], [jobTwo], [jobThree]][index] })));
-      setCertifications([certificationFile]);
+      setSkillEvidence((current) => Object.fromEntries(Object.entries(current).map(([skill, evidence], index) => [skill, {
+        ...evidence,
+        photos: [[jobOne], [jobTwo], [jobThree]][index],
+        videos: [demoVideo],
+        certificates: index === 0 ? [certificationFile] : [],
+      }])));
       setInsurance([insuranceFile]);
     }).catch((error) => { if (active) setMessage(error.message); });
     return () => { active = false; };
@@ -446,9 +486,13 @@ function ProviderApplicationPage({ lang, shell }) {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
   };
-  const setWorkSample = (index, key, value) => {
-    setWorkSamples((current) => current.map((sample, sampleIndex) => sampleIndex === index ? { ...sample, [key]: value } : sample));
-    setFieldErrors((current) => ({ ...current, [`work_sample_${index}`]: undefined }));
+  const setSkillEvidenceValue = (skill, index, key, value) => {
+    setSkillEvidence((current) => ({ ...current, [skill]: { ...(current[skill] || createSkillEvidenceItem()), [key]: value } }));
+    setFieldErrors((current) => ({ ...current, [`skill_evidence_${index}`]: undefined, skill_evidence: undefined }));
+  };
+  const setSpecialties = (values) => {
+    set('specialties', values);
+    setSkillEvidence((current) => Object.fromEntries(values.map((skill) => [skill, current[skill] || createSkillEvidenceItem()])));
   };
 
   const contactError = (key, value = form[key]) => {
@@ -511,18 +555,19 @@ function ProviderApplicationPage({ lang, shell }) {
   async function submit(event) {
     event.preventDefault();
     const evidenceErrors = {};
-    workSamples.forEach((sample, index) => {
-      if (!sample.photos.length) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Add at least one photo for this completed job.', 'Agrega al menos una foto de este trabajo realizado.');
-      else if (!sample.description.trim()) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Explain what you diagnosed or repaired on this job.', 'Explica qué diagnosticaste o reparaste en este trabajo.');
-      else if (!sample.services.length) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Select the services this job demonstrates.', 'Selecciona los servicios que demuestra este trabajo.');
+    const evidenceIssues = validateProviderSkillEvidence({ specialties: form.specialties, evidenceBySkill: skillEvidence, toolPhotos });
+    if (evidenceIssues.tools) evidenceErrors.tools = tx(lang, 'Add at least one clear photo of tools you personally own and use.', 'Agrega al menos una foto clara de las herramientas que posees y utilizas.');
+    form.specialties.forEach((skill, index) => {
+      const issues = evidenceIssues[skill] || [];
+      if (!issues.length) return;
+      const issueLabels = {
+        missing_video: tx(lang, 'a work video', 'un video del trabajo'),
+        missing_description: tx(lang, 'an explanation of the work', 'una explicación del trabajo'),
+        missing_vehicle_type: tx(lang, 'the vehicle or equipment type', 'el tipo de vehículo o equipo'),
+        missing_vehicle_details: tx(lang, 'the make and model', 'la marca y el modelo'),
+      };
+      evidenceErrors[`skill_evidence_${index}`] = tx(lang, `Complete ${skill}: `, `Completa ${optionLabel(lang, skill)}: `) + issues.map((issue) => issueLabels[issue]).join(', ');
     });
-    const supportedServices = new Set(workSamples.flatMap((sample) => sample.services));
-    const unsupportedServices = form.services_offered.filter((service) => !supportedServices.has(service));
-    if (unsupportedServices.length) evidenceErrors.work_sample_services = tx(
-      lang,
-      `Link evidence to every selected service. Still unsupported: ${unsupportedServices.join(', ')}.`,
-      `Vincula evidencia con cada servicio seleccionado. Aún sin sustento: ${unsupportedServices.map((service) => optionLabel(lang, service)).join(', ')}.`,
-    );
     if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged || !form.no_advance_fee_acknowledged) {
       evidenceErrors.required_consents = tx(lang, 'Accept the required terms, payment policy, and independent-provider acknowledgement.', 'Acepta los términos requeridos, la política de cobro y la confirmación de proveedor independiente.');
     }
@@ -533,9 +578,9 @@ function ProviderApplicationPage({ lang, shell }) {
     setBusy(true);
     setMessage('');
     try {
-      for (const sample of workSamples) {
-        for (const video of sample.videos) {
-          if (await readVideoDuration(video) > 300) throw new Error(tx(lang, 'Each work sample video must be five minutes or less.', 'Cada video de trabajo debe durar cinco minutos o menos.'));
+      for (const evidence of Object.values(skillEvidence)) {
+        for (const video of evidence.videos) {
+          if (await readVideoDuration(video) > 300) throw new Error(tx(lang, 'Each skill video must be five minutes or less.', 'Cada video de habilidad debe durar cinco minutos o menos.'));
         }
       }
       const folder = `provider-intake/${crypto.randomUUID()}`;
@@ -543,15 +588,25 @@ function ProviderApplicationPage({ lang, shell }) {
         ...(await uploadPrivateFiles('provider-private', toolPhotos, `${folder}/tools`, 'image')).map((item) => ({ ...item, category: 'tools' })),
         ...(await uploadPrivateFiles('provider-private', equipmentPhotos, `${folder}/equipment`, 'image')).map((item) => ({ ...item, category: 'equipment' })),
       ];
-      for (let index = 0; index < workSamples.length; index += 1) {
-        const sample = workSamples[index];
-        const evidenceDetails = { description: sample.description.trim(), services: sample.services, work_sample: index + 1 };
+      const certificationFiles = [];
+      for (let index = 0; index < form.specialties.length; index += 1) {
+        const skill = form.specialties[index];
+        const evidence = skillEvidence[skill];
+        const evidenceDetails = {
+          skill,
+          description: evidence.description.trim(),
+          vehicle_type: evidence.vehicle_type,
+          vehicle_year: evidence.vehicle_year.trim(),
+          vehicle_make_model: evidence.vehicle_make_model.trim(),
+        };
         media.push(
-          ...(await uploadPrivateFiles('provider-private', sample.photos, `${folder}/work-sample-${index + 1}/photos`, 'image')).map((item) => ({ ...item, ...evidenceDetails, category: `work_sample_${index + 1}_photo` })),
-          ...(await uploadPrivateFiles('provider-private', sample.videos, `${folder}/work-sample-${index + 1}/videos`, 'video')).map((item) => ({ ...item, ...evidenceDetails, category: `work_sample_${index + 1}_video` })),
+          ...(await uploadPrivateFiles('provider-private', evidence.photos, `${folder}/skills/${index + 1}/photos`, 'image')).map((item) => ({ ...item, ...evidenceDetails, category: 'skill_evidence_photo' })),
+          ...(await uploadPrivateFiles('provider-private', evidence.videos, `${folder}/skills/${index + 1}/videos`, 'video')).map((item) => ({ ...item, ...evidenceDetails, category: 'skill_evidence_video' })),
+        );
+        certificationFiles.push(
+          ...(await uploadPrivateFiles('provider-private', evidence.certificates, `${folder}/skills/${index + 1}/certificates`, 'document')).map((item) => ({ ...item, ...evidenceDetails, category: 'skill_certificate' })),
         );
       }
-      const certificationFiles = await uploadPrivateFiles('provider-private', certifications, `${folder}/certifications`, 'document');
       const insuranceFiles = await uploadPrivateFiles('provider-private', insurance, `${folder}/insurance`, 'document');
       const result = await submitProviderApplication({
         ...form,
@@ -622,11 +677,10 @@ function ProviderApplicationPage({ lang, shell }) {
         </div> : null}
 
         {step === 2 ? <div className="form-grid">
-          <CheckboxGroup lang={lang} label={tx(lang, 'Specialties', 'Especialidades')} options={specialties} values={form.specialties} onChange={(value) => set('specialties', value)} required fieldKey="specialties" invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
+          <CheckboxGroup lang={lang} label={tx(lang, 'Verifiable skills and specialties', 'Habilidades y especialidades comprobables')} options={specialties} values={form.specialties} onChange={setSpecialties} required fieldKey="specialties" invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
           <CheckboxGroup lang={lang} label={tx(lang, 'Vehicle types served', 'Tipos de vehículos que atiendes')} options={vehicleTypes} values={form.vehicle_types_served} onChange={(value) => set('vehicle_types_served', value)} required fieldKey="vehicle_types_served" invalid={Boolean(fieldErrors.vehicle_types_served)} error={fieldErrors.vehicle_types_served} />
           <CheckboxGroup lang={lang} label={tx(lang, 'Services performed', 'Servicios que realizas')} options={serviceTypes} values={form.services_offered} onChange={(value) => {
             set('services_offered', value);
-            setWorkSamples((current) => current.map((sample) => ({ ...sample, services: sample.services.filter((service) => value.includes(service)) })));
           }} required fieldKey="services_offered" invalid={Boolean(fieldErrors.services_offered)} error={fieldErrors.services_offered} />
           <details className="optional-form-section full">
             <summary>{tx(lang, 'Optional: services you prefer not to perform', 'Opcional: servicios que prefieres no realizar')}</summary>
@@ -667,25 +721,32 @@ function ProviderApplicationPage({ lang, shell }) {
         </div> : null}
 
         {step === 4 ? <div className="form-grid">
-          <FilePicker label={tx(lang, 'Your tools', 'Tus herramientas')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} hint={tx(lang, 'Show the hand tools and diagnostic tools you own, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Muestra las herramientas manuales y de diagnóstico que posees, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
+          <FilePicker label={tx(lang, 'Your own tools', 'Tus herramientas propias')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} required fieldKey="tools" invalid={Boolean(fieldErrors.tools)} error={fieldErrors.tools} hint={tx(lang, 'Required: show the hand tools and diagnostic tools you personally own and use, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Obligatorio: muestra las herramientas manuales y de diagnóstico que posees y utilizas, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
           <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} files={equipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
-          <div className={`work-samples full ${fieldErrors.work_sample_services ? 'field-invalid' : ''}`} data-field="work_sample_services">
+          <div className={`work-samples full ${fieldErrors.skill_evidence ? 'field-invalid' : ''}`} data-field="skill_evidence">
             <div className="work-samples-heading">
-              <div><strong>{tx(lang, 'Three previous jobs', 'Tres trabajos anteriores')}</strong><p>{tx(lang, 'Explain each completed job, link it to the services it demonstrates, and add at least one photo. Videos are optional and may be up to five minutes each.', 'Explica cada trabajo realizado, vincúlalo con los servicios que demuestra y agrega al menos una foto. Los videos son opcionales y pueden durar hasta cinco minutos cada uno.')}</p></div>
+              <div><strong>{tx(lang, 'Evidence for every selected skill', 'Evidencia para cada habilidad seleccionada')}</strong><p>{tx(lang, 'Every skill requires at least one video showing work you performed. Explain the problem, what you did, and the result. Photos and certificates are optional supporting evidence.', 'Cada habilidad requiere al menos un video que muestre un trabajo realizado por ti. Explica el problema, qué hiciste y cuál fue el resultado. Las fotos y certificados son evidencia adicional opcional.')}</p></div>
             </div>
-            {workSamples.map((sample, index) => <article className={`work-sample ${fieldErrors[`work_sample_${index}`] ? 'field-invalid' : ''}`} data-field={`work_sample_${index}`} key={index}>
-              <header><span>{String(index + 1).padStart(2, '0')}</span><strong>{tx(lang, `Completed job ${index + 1}`, `Trabajo realizado ${index + 1}`)}</strong></header>
-              <Field label={tx(lang, 'What did you diagnose or repair?', '¿Qué diagnosticaste o reparaste?')} required hint={tx(lang, 'Briefly describe the problem, the work performed, and the result.', 'Describe brevemente el problema, el trabajo realizado y el resultado.')}><textarea value={sample.description} onChange={(event) => setWorkSample(index, 'description', event.target.value)} /></Field>
-              <CheckboxGroup lang={lang} label={tx(lang, 'Services demonstrated by this job', 'Servicios demostrados por este trabajo')} options={form.services_offered} values={sample.services} onChange={(values) => setWorkSample(index, 'services', values)} required />
-              <div className="work-sample-fields">
-                <FilePicker label={tx(lang, 'Job photos', 'Fotos del trabajo')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setWorkSample(index, 'photos', files)} files={sample.photos} required />
-                <FilePicker label={tx(lang, 'Job video, optional', 'Video del trabajo, opcional')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setWorkSample(index, 'videos', files)} files={sample.videos} hint={tx(lang, 'Up to five minutes.', 'Máximo cinco minutos.')} />
+            {form.specialties.map((skill, index) => {
+              const evidence = skillEvidence[skill] || createSkillEvidenceItem();
+              const errorKey = `skill_evidence_${index}`;
+              return <article className={`work-sample skill-evidence-card ${fieldErrors[errorKey] ? 'field-invalid' : ''}`} data-field={errorKey} key={skill}>
+              <header><span>{String(index + 1).padStart(2, '0')}</span><div><small>{tx(lang, 'Skill to verify', 'Habilidad por comprobar')}</small><strong>{optionLabel(lang, skill)}</strong></div></header>
+              <div className="skill-asset-grid">
+                <Field label={tx(lang, 'Vehicle or equipment type', 'Tipo de vehículo o equipo')} required><select value={evidence.vehicle_type} onChange={(event) => setSkillEvidenceValue(skill, index, 'vehicle_type', event.target.value)}><option value="">{tx(lang, 'Select one', 'Selecciona uno')}</option>{vehicleTypes.map((type) => <option value={type} key={type}>{optionLabel(lang, type)}</option>)}</select></Field>
+                <Field label={tx(lang, 'Year, optional', 'Año, opcional')}><input inputMode="numeric" maxLength="4" value={evidence.vehicle_year} onChange={(event) => setSkillEvidenceValue(skill, index, 'vehicle_year', digitsOnly(event.target.value, 4))} placeholder="2018" /></Field>
+                <Field label={tx(lang, 'Make and model', 'Marca y modelo')} required hint={tx(lang, 'For equipment or boats, enter the brand and model.', 'Para equipos o botes, indica la marca y el modelo.')}><input value={evidence.vehicle_make_model} onChange={(event) => setSkillEvidenceValue(skill, index, 'vehicle_make_model', event.target.value)} placeholder={tx(lang, 'Example: Ford F-150', 'Ejemplo: Ford F-150')} /></Field>
               </div>
-              {fieldErrors[`work_sample_${index}`] ? <small className="field-error" role="alert">{fieldErrors[`work_sample_${index}`]}</small> : null}
-            </article>)}
-            {fieldErrors.work_sample_services ? <small className="field-error" role="alert">{fieldErrors.work_sample_services}</small> : null}
+              <Field label={tx(lang, 'What did you diagnose or repair?', '¿Qué diagnosticaste o reparaste?')} required hint={tx(lang, 'Describe the original problem, your diagnosis, the work you personally performed, and the final result.', 'Describe el problema original, tu diagnóstico, el trabajo que realizaste personalmente y el resultado final.')}><textarea value={evidence.description} onChange={(event) => setSkillEvidenceValue(skill, index, 'description', event.target.value)} /></Field>
+              <div className="work-sample-fields">
+                <FilePicker label={tx(lang, 'Work video', 'Video del trabajo')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setSkillEvidenceValue(skill, index, 'videos', files)} files={evidence.videos} required hint={tx(lang, 'Required. Show the work and explain what you are doing. Up to five minutes per video.', 'Obligatorio. Muestra el trabajo y explica qué estás haciendo. Máximo cinco minutos por video.')} />
+                <FilePicker label={tx(lang, 'Work photos, optional', 'Fotos del trabajo, opcional')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setSkillEvidenceValue(skill, index, 'photos', files)} files={evidence.photos} />
+                <FilePicker label={tx(lang, 'Certificate for this skill, optional', 'Certificado de esta habilidad, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(files) => setSkillEvidenceValue(skill, index, 'certificates', files)} files={evidence.certificates} hint={tx(lang, 'Training, course, or technical certification supporting this specific skill.', 'Curso, capacitación o certificación técnica que respalde esta habilidad específica.')} />
+              </div>
+              {fieldErrors[errorKey] ? <small className="field-error" role="alert">{fieldErrors[errorKey]}</small> : null}
+            </article>;
+            })}
           </div>
-          <FilePicker label={tx(lang, 'Certifications, optional', 'Certificaciones, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setCertifications} files={certifications} hint={tx(lang, 'Upload only documents you want CarDaddy to review privately.', 'Sube únicamente los documentos que deseas que CarDaddy revise de forma privada.')} />
           <FilePicker label={tx(lang, 'Commercial insurance, optional', 'Seguro comercial, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setInsurance} files={insurance} hint={tx(lang, 'Upload proof only if you currently have commercial coverage.', 'Sube el comprobante solamente si actualmente posees cobertura comercial.')} />
           <div className={`consent-stack full ${fieldErrors.required_consents ? 'field-invalid' : ''}`} data-field="required_consents">
             <BooleanChoice label={tx(lang, 'I accept the draft network terms and privacy notice.', 'Acepto los términos preliminares de la red y el aviso de privacidad.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />

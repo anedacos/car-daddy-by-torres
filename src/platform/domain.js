@@ -151,6 +151,26 @@ export function validateUpload(file, kind = 'image') {
   return { valid: true, error: '' };
 }
 
+/**
+ * @param {{ specialties?: string[], evidenceBySkill?: Record<string, { videos?: unknown[], description?: string, vehicle_type?: string, vehicle_make_model?: string }>, toolPhotos?: unknown[] }} values
+ * @returns {Record<string, string[]>}
+ */
+export function validateProviderSkillEvidence({ specialties = [], evidenceBySkill = {}, toolPhotos = [] } = {}) {
+  /** @type {Record<string, string[]>} */
+  const issues = {};
+  if (!toolPhotos.length) issues.tools = ['missing_tool_photo'];
+  specialties.forEach((skill) => {
+    const evidence = evidenceBySkill[skill] || {};
+    const skillIssues = [];
+    if (!(evidence.videos || []).length) skillIssues.push('missing_video');
+    if (!String(evidence.description || '').trim()) skillIssues.push('missing_description');
+    if (!String(evidence.vehicle_type || '').trim()) skillIssues.push('missing_vehicle_type');
+    if (!String(evidence.vehicle_make_model || '').trim()) skillIssues.push('missing_vehicle_details');
+    if (skillIssues.length) issues[skill] = skillIssues;
+  });
+  return issues;
+}
+
 /** @param {PlatformRecord} serviceCase @param {PlatformRecord} provider */
 export function isQualifiedOpportunity(serviceCase, provider) {
   if (!serviceCase?.share_consent || !serviceCase?.phone) return false;

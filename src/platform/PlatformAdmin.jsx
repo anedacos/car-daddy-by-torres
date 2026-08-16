@@ -140,23 +140,41 @@ function PrivateFiles({ manifest = [] }) {
   ))}</div>;
 }
 
-function EvidenceGroup({ title, items, description, services }) {
-  if (!items.length) return null;
+function EvidenceGroup({ title, items, description, services, asset, requiredVideo = false }) {
+  const hasVideo = items.some((item) => item.type?.startsWith('video/'));
   return <section className="evidence-group">
     <header><div><strong>{title}</strong>{description ? <p>{description}</p> : null}</div><span>{items.length} file{items.length === 1 ? '' : 's'}</span></header>
+    {asset ? <p className="evidence-asset"><CarFront size={16} />{asset}</p> : null}
     {services?.length ? <div className="evidence-support"><FileCheck2 size={16} /><span>Supports:</span>{services.map((service) => <b key={service}>{service}</b>)}</div> : null}
+    {requiredVideo && !hasVideo ? <p className="evidence-warning">Required work video is missing for this skill.</p> : null}
     {!description && title.startsWith('Previous job') ? <p className="evidence-warning">This earlier submission did not capture a job description or linked services.</p> : null}
-    <div className="evidence-grid">{items.map((item, index) => <PrivateMedia item={item} key={`${item.path}-${index}`} />)}</div>
+    {items.length ? <div className="evidence-grid">{items.map((item, index) => <PrivateMedia item={item} key={`${item.path}-${index}`} />)}</div> : null}
   </section>;
 }
 
 function ProviderEvidence({ provider }) {
   const media = provider.media_manifest || [];
+  const certifications = provider.certifications_manifest || [];
   const baseGroups = ['tools', 'equipment'].map((category) => ({
     key: category,
     title: categoryLabels[category],
     items: media.filter((item) => item.category === category),
-  }));
+    requiredVideo: false,
+  })).filter((group) => group.items.length || group.key === 'tools');
+  const skillGroups = (provider.specialties || []).map((skill) => {
+    const skillMedia = media.filter((item) => item.skill === skill);
+    const skillCertificates = certifications.filter((item) => item.skill === skill);
+    const details = [...skillMedia, ...skillCertificates].find((item) => item.description) || {};
+    return {
+      key: `skill-${skill}`,
+      title: skill,
+      items: [...skillMedia, ...skillCertificates],
+      description: details.description,
+      asset: [details.vehicle_year, details.vehicle_make_model, details.vehicle_type].filter(Boolean).join(' · '),
+      services: [skill],
+      requiredVideo: true,
+    };
+  });
   const workGroups = [1, 2, 3].map((number) => {
     const items = media.filter((item) => item.category?.startsWith(`work_sample_${number}_`));
     return {
@@ -168,12 +186,31 @@ function ProviderEvidence({ provider }) {
     };
   });
   const documentGroups = [
-    { key: 'certifications', title: categoryLabels.certifications, items: provider.certifications_manifest || [] },
+    { key: 'certifications', title: categoryLabels.certifications, items: certifications.filter((item) => !item.skill) },
     { key: 'insurance', title: categoryLabels.insurance, items: provider.commercial_insurance_manifest || [] },
   ];
-  const groups = [...baseGroups, ...workGroups, ...documentGroups].filter((group) => group.items.length);
+  const hasSkillEvidence = media.some((item) => item.category?.startsWith('skill_evidence_')) || certifications.some((item) => item.skill);
+  const groups = [
+    ...baseGroups,
+    ...(hasSkillEvidence ? skillGroups : workGroups),
+    ...documentGroups,
+  ].filter((group) => group.items.length || group.requiredVideo || group.key === 'tools');
   if (!groups.length) return <p className="admin-empty">No private evidence was uploaded.</p>;
   return <div className="provider-evidence-groups">{groups.map((group) => <EvidenceGroup {...group} key={group.key} />)}</div>;
+}
+
+function SkillEvidenceSummary({ provider }) {
+  const media = provider.media_manifest || [];
+  return <div className="skill-evidence-summary">{(provider.specialties || []).map((skill) => {
+    const videos = media.filter((item) => item.skill === skill && item.category === 'skill_evidence_video').length;
+    const photos = media.filter((item) => item.skill === skill && item.category === 'skill_evidence_photo').length;
+    const certificates = (provider.certifications_manifest || []).filter((item) => item.skill === skill).length;
+    return <div className={videos ? 'complete' : 'missing'} key={skill}>
+      {videos ? <Check size={17} /> : <ShieldAlert size={17} />}
+      <strong>{skill}</strong>
+      <span>{videos ? `${videos} video${videos === 1 ? '' : 's'}` : 'Required video missing'}{photos ? ` · ${photos} photo${photos === 1 ? '' : 's'}` : ''}{certificates ? ` · ${certificates} certificate${certificates === 1 ? '' : 's'}` : ''}</span>
+    </div>;
+  })}</div>;
 }
 
 function AvailabilityReview({ provider }) {
@@ -259,6 +296,7 @@ function ProviderReviews({ providers, reload }) {
               <section className="review-section">
                 <header><Wrench size={20} /><div><h4>Services and capabilities</h4><p>Review these against the linked work evidence below</p></div></header>
                 <div className="service-group"><strong>Specialties</strong><ServiceTags items={provider.specialties} /></div>
+                <SkillEvidenceSummary provider={provider} />
                 {provider.services_offered?.length ? <div className="service-group"><strong>Services performed</strong><ServiceTags items={provider.services_offered} /></div> : null}
                 <div className="service-group"><strong>Vehicle types served</strong><ServiceTags items={provider.vehicle_types_served} /></div>
                 <div className={`payment-policy-review ${provider.no_advance_fee_acknowledged ? 'accepted' : 'legacy'}`}>

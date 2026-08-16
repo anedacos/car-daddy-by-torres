@@ -1299,6 +1299,29 @@ h3 {
   font-weight: 900;
 }
 
+.work-sample > header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.work-sample > header small {
+  color: #68747d;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.skill-evidence-card {
+  border-left: 4px solid #f5b301;
+}
+
+.skill-asset-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(100px, 0.35fr) minmax(220px, 1.2fr);
+  margin-bottom: 14px;
+}
+
 .work-sample-fields {
   display: grid;
   gap: 14px;
@@ -1824,6 +1847,55 @@ h3 {
   border-radius: 4px;
   color: #176b43;
   padding: 4px 6px;
+}
+
+.evidence-asset {
+  align-items: center;
+  color: #34414a;
+  display: flex;
+  font-size: 13px;
+  font-weight: 800;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.skill-evidence-summary {
+  display: grid;
+  gap: 7px;
+}
+
+.skill-evidence-summary > div {
+  align-items: center;
+  border: 1px solid #dfe5e9;
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 18px minmax(140px, 0.8fr) minmax(180px, 1fr);
+  padding: 9px 10px;
+}
+
+.skill-evidence-summary > div.complete {
+  background: #f2faf6;
+  border-color: #b8ddc9;
+}
+
+.skill-evidence-summary > div.missing {
+  background: #fff1ed;
+  border-color: #f1b5a8;
+}
+
+.skill-evidence-summary > div.complete svg {
+  color: #176b43;
+}
+
+.skill-evidence-summary > div.missing svg,
+.skill-evidence-summary > div.missing span {
+  color: #b42318;
+}
+
+.skill-evidence-summary span {
+  color: #53606a;
+  font-size: 12px;
 }
 
 .evidence-warning {
@@ -2468,6 +2540,7 @@ td {
   .boolean-grid,
   .portal-paths,
   .work-sample-fields,
+  .skill-asset-grid,
   .time-range,
   .case-admin-grid,
   .operations-metrics,
@@ -2477,6 +2550,15 @@ td {
   .invoice-columns,
   .invoice-preview footer {
     grid-template-columns: 1fr;
+  }
+
+  .skill-evidence-summary > div {
+    align-items: start;
+    grid-template-columns: 18px 1fr;
+  }
+
+  .skill-evidence-summary > div span {
+    grid-column: 2;
   }
 
   .schedule-day-heading {
