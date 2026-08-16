@@ -238,10 +238,11 @@ function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = fals
   );
 }
 
-function FilePicker({ label, accept, multiple = true, onChange, hint, required = false, fieldKey, invalid = false, error }) {
+function FilePicker({ label, accept, multiple = true, onChange, hint, required = false, fieldKey, invalid = false, error, files = [] }) {
   return (
     <Field label={label} hint={hint} required={required} fieldKey={fieldKey} invalid={invalid} error={error}>
       <span className="file-picker"><Upload size={18} /><input type="file" accept={accept} multiple={multiple} onChange={(event) => onChange(Array.from(event.target.files || []))} /></span>
+      {files.length ? <span className="loaded-file-list">{files.map((file) => <span key={`${file.name}-${file.size}`}><FileCheck2 size={14} />{file.name}</span>)}</span> : null}
     </Field>
   );
 }
@@ -295,18 +296,104 @@ const initialProvider = {
 
 const createWorkSamples = () => Array.from({ length: 3 }, () => ({ description: '', services: [], photos: [], videos: [] }));
 
+const demoServices = ['Diagnostics', 'Mechanical repair', 'Electrical repair', 'No-start help', 'Brakes', 'Roadside assistance', 'Car dolly towing'];
+
+const demoProvider = {
+  ...initialProvider,
+  full_name: '[DEMO] Alex Rivera',
+  business_name: 'Rivera Mobile Auto Demo',
+  phone: '2285550147',
+  email: 'alex.rivera.demo@example.com',
+  city: 'Gulfport',
+  zip_code: '39503',
+  max_travel_radius: 40,
+  max_travel_hours: '1',
+  languages: ['English', 'Spanish'],
+  years_experience: 9,
+  specialties: ['General automotive mechanics', 'Electromechanics', 'Electrical diagnostics', 'Computer diagnostics', 'Engine', 'Brakes', 'Batteries', 'Maintenance', 'Roadside assistance'],
+  vehicle_types_served: ['Car', 'Light truck', 'Diesel truck', 'Light equipment'],
+  services_offered: demoServices,
+  services_not_offered: ['Other'],
+  available_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  availability_schedule: {
+    Monday: [{ start: '08:00', end: '17:00' }],
+    Tuesday: [{ start: '08:00', end: '17:00' }],
+    Wednesday: [{ start: '08:00', end: '17:00' }],
+    Thursday: [{ start: '08:00', end: '17:00' }],
+    Friday: [{ start: '08:00', end: '17:00' }],
+    Saturday: [{ start: '09:00', end: '14:00' }],
+  },
+  immediate_available: true,
+  scheduled_available: true,
+  night_available: false,
+  emergency_available: true,
+  minimum_inspection_fee: '75',
+  payment_methods: ['Cash', 'Zelle', 'Cash App', 'Card'],
+  terms_accepted: true,
+  privacy_accepted: true,
+  independent_provider_acknowledged: true,
+  media_publicity_consent: true,
+};
+
+const createDemoWorkSamples = () => [
+  {
+    description: 'Diagnosed an intermittent no-start condition, repaired damaged wiring in the starter circuit, and verified reliable operation.',
+    services: ['Diagnostics', 'Electrical repair', 'No-start help'],
+    photos: [], videos: [],
+  },
+  {
+    description: 'Inspected the braking system, replaced worn front brake components, and completed a road test to confirm safe braking.',
+    services: ['Mechanical repair', 'Brakes'],
+    photos: [], videos: [],
+  },
+  {
+    description: 'Secured a disabled vehicle on a car dolly and transported it safely after confirming the vehicle could not continue under its own power.',
+    services: ['Roadside assistance', 'Car dolly towing'],
+    photos: [], videos: [],
+  },
+];
+
+async function publicAssetFile(path, name) {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`Unable to load demo file: ${name}`);
+  const blob = await response.blob();
+  return new File([blob], name, { type: blob.type || 'image/jpeg' });
+}
+
 function ProviderApplicationPage({ lang, shell }) {
   const ShellComponent = shell;
+  const isDemoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(initialProvider);
+  const [form, setForm] = useState(() => isDemoMode ? { ...demoProvider } : { ...initialProvider });
   const [toolPhotos, setToolPhotos] = useState([]);
   const [equipmentPhotos, setEquipmentPhotos] = useState([]);
-  const [workSamples, setWorkSamples] = useState(createWorkSamples);
+  const [workSamples, setWorkSamples] = useState(isDemoMode ? createDemoWorkSamples : createWorkSamples);
   const [certifications, setCertifications] = useState([]);
   const [insurance, setInsurance] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!isDemoMode) return undefined;
+    let active = true;
+    Promise.all([
+      publicAssetFile('/media/04_final_web/diagnostics_tools.jpg', 'demo-organized-tools.jpg'),
+      publicAssetFile('/media/13_ai_professional_replacements/mobile_ai.jpg', 'demo-service-vehicle.jpg'),
+      publicAssetFile('/media/13_ai_professional_replacements/diagnostics_ai.jpg', 'demo-electrical-diagnosis.jpg'),
+      publicAssetFile('/media/04_final_web/brake_service_clean.jpg', 'demo-brake-repair.jpg'),
+      publicAssetFile('/media/13_ai_professional_replacements/tow_dolly_ai.jpg', 'demo-car-dolly-job.jpg'),
+      publicAssetFile('/media/10_logo_perfil/profile_logo_recommended.jpg', 'demo-certification.jpg'),
+      publicAssetFile('/media/09_hero_banner/hero_clean_mechanic.jpg', 'demo-insurance-proof.jpg'),
+    ]).then(([toolsFile, equipmentFile, jobOne, jobTwo, jobThree, certificationFile, insuranceFile]) => {
+      if (!active) return;
+      setToolPhotos([toolsFile]);
+      setEquipmentPhotos([equipmentFile]);
+      setWorkSamples((current) => current.map((sample, index) => ({ ...sample, photos: [[jobOne], [jobTwo], [jobThree]][index] })));
+      setCertifications([certificationFile]);
+      setInsurance([insuranceFile]);
+    }).catch((error) => { if (active) setMessage(error.message); });
+    return () => { active = false; };
+  }, [isDemoMode]);
   const set = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
@@ -443,6 +530,7 @@ function ProviderApplicationPage({ lang, shell }) {
   return (
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy Network" title={tx(lang, 'Join the CarDaddy Network', 'Únete a la red CarDaddy')} body={tx(lang, 'Apply as an independent automotive provider. Your profile and private evidence are reviewed before approval.', 'Solicita participar como proveedor automotriz independiente. Tu perfil y evidencia privada se revisan antes de aprobarse.')} />
+      {isDemoMode ? <div className="demo-mode-banner"><AlertTriangle size={20} /><div><strong>{tx(lang, 'Temporary review mode', 'Modo temporal de revisión')}</strong><span>{tx(lang, 'Every step contains fictional test data. Demo evidence loads automatically on the final step and any submitted application is clearly marked [DEMO].', 'Todos los pasos contienen datos ficticios de prueba. La evidencia demo se carga automáticamente en el último paso y cualquier solicitud enviada queda marcada claramente como [DEMO].')}</span></div></div> : null}
       <WizardProgress step={step} labels={tx(lang, ['Contact', 'Services', 'Availability', 'Evidence'], ['Contacto', 'Servicios', 'Disponibilidad', 'Evidencia'])} />
       <form className="platform-wizard" onSubmit={submit}>
         {step === 1 ? <div className="form-grid">
@@ -502,8 +590,8 @@ function ProviderApplicationPage({ lang, shell }) {
         </div> : null}
 
         {step === 4 ? <div className="form-grid">
-          <FilePicker label={tx(lang, 'Your tools', 'Tus herramientas')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} hint={tx(lang, 'Show the hand tools and diagnostic tools you own, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Muestra las herramientas manuales y de diagnóstico que posees, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
-          <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
+          <FilePicker label={tx(lang, 'Your tools', 'Tus herramientas')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} hint={tx(lang, 'Show the hand tools and diagnostic tools you own, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Muestra las herramientas manuales y de diagnóstico que posees, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
+          <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} files={equipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
           <div className={`work-samples full ${fieldErrors.work_sample_services ? 'field-invalid' : ''}`} data-field="work_sample_services">
             <div className="work-samples-heading">
               <div><strong>{tx(lang, 'Three previous jobs', 'Tres trabajos anteriores')}</strong><p>{tx(lang, 'Explain each completed job, link it to the services it demonstrates, and add at least one photo. Videos are optional and may be up to five minutes each.', 'Explica cada trabajo realizado, vincúlalo con los servicios que demuestra y agrega al menos una foto. Los videos son opcionales y pueden durar hasta cinco minutos cada uno.')}</p></div>
@@ -513,15 +601,15 @@ function ProviderApplicationPage({ lang, shell }) {
               <Field label={tx(lang, 'What did you diagnose or repair?', '¿Qué diagnosticaste o reparaste?')} required hint={tx(lang, 'Briefly describe the problem, the work performed, and the result.', 'Describe brevemente el problema, el trabajo realizado y el resultado.')}><textarea value={sample.description} onChange={(event) => setWorkSample(index, 'description', event.target.value)} /></Field>
               <CheckboxGroup lang={lang} label={tx(lang, 'Services demonstrated by this job', 'Servicios demostrados por este trabajo')} options={form.services_offered} values={sample.services} onChange={(values) => setWorkSample(index, 'services', values)} required />
               <div className="work-sample-fields">
-                <FilePicker label={tx(lang, 'Job photos', 'Fotos del trabajo')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setWorkSample(index, 'photos', files)} required />
-                <FilePicker label={tx(lang, 'Job video, optional', 'Video del trabajo, opcional')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setWorkSample(index, 'videos', files)} hint={tx(lang, 'Up to five minutes.', 'Máximo cinco minutos.')} />
+                <FilePicker label={tx(lang, 'Job photos', 'Fotos del trabajo')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setWorkSample(index, 'photos', files)} files={sample.photos} required />
+                <FilePicker label={tx(lang, 'Job video, optional', 'Video del trabajo, opcional')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setWorkSample(index, 'videos', files)} files={sample.videos} hint={tx(lang, 'Up to five minutes.', 'Máximo cinco minutos.')} />
               </div>
               {fieldErrors[`work_sample_${index}`] ? <small className="field-error" role="alert">{fieldErrors[`work_sample_${index}`]}</small> : null}
             </article>)}
             {fieldErrors.work_sample_services ? <small className="field-error" role="alert">{fieldErrors.work_sample_services}</small> : null}
           </div>
-          <FilePicker label={tx(lang, 'Certifications, optional', 'Certificaciones, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setCertifications} hint={tx(lang, 'Upload only documents you want CarDaddy to review privately.', 'Sube únicamente los documentos que deseas que CarDaddy revise de forma privada.')} />
-          <FilePicker label={tx(lang, 'Commercial insurance, optional', 'Seguro comercial, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setInsurance} hint={tx(lang, 'Upload proof only if you currently have commercial coverage.', 'Sube el comprobante solamente si actualmente posees cobertura comercial.')} />
+          <FilePicker label={tx(lang, 'Certifications, optional', 'Certificaciones, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setCertifications} files={certifications} hint={tx(lang, 'Upload only documents you want CarDaddy to review privately.', 'Sube únicamente los documentos que deseas que CarDaddy revise de forma privada.')} />
+          <FilePicker label={tx(lang, 'Commercial insurance, optional', 'Seguro comercial, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setInsurance} files={insurance} hint={tx(lang, 'Upload proof only if you currently have commercial coverage.', 'Sube el comprobante solamente si actualmente posees cobertura comercial.')} />
           <div className={`consent-stack full ${fieldErrors.required_consents ? 'field-invalid' : ''}`} data-field="required_consents">
             <BooleanChoice label={tx(lang, 'I accept the draft network terms and privacy notice.', 'Acepto los términos preliminares de la red y el aviso de privacidad.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />
             <BooleanChoice label={tx(lang, 'I understand that I am applying as an independent provider, not as a CarDaddy employee.', 'Entiendo que solicito participar como proveedor independiente, no como empleado de CarDaddy.')} checked={form.independent_provider_acknowledged} onChange={(value) => set('independent_provider_acknowledged', value)} />

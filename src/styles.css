@@ -970,6 +970,52 @@ h3 {
   padding: 0;
 }
 
+.loaded-file-list {
+  display: grid;
+  gap: 5px;
+}
+
+.loaded-file-list > span {
+  align-items: center;
+  background: #e5f4ec;
+  border-radius: 4px;
+  color: #176b43;
+  display: flex;
+  font-size: 11px;
+  font-weight: 800;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  padding: 7px 8px;
+}
+
+.demo-mode-banner {
+  align-items: flex-start;
+  background: #101418;
+  border-left: 5px solid #f5b301;
+  color: white;
+  display: flex;
+  gap: 11px;
+  margin: 0 auto 20px;
+  max-width: 1060px;
+  padding: 14px 16px;
+}
+
+.demo-mode-banner > svg {
+  color: #f5b301;
+  flex: 0 0 auto;
+}
+
+.demo-mode-banner > div {
+  display: grid;
+  gap: 4px;
+}
+
+.demo-mode-banner span {
+  color: #dce4e9;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .work-samples {
   display: grid;
   gap: 12px;
