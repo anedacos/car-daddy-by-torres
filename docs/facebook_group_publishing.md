@@ -1,0 +1,45 @@
+# Car Daddy Facebook Group Publishing Preparation
+
+Status: prepared and paused. No Facebook post has been created or queued for automatic execution.
+
+## Profile and catalog
+
+- Facebook Group Join Assistant profile: `fgja-2` (`Car Daddy`).
+- The local catalog is read through its loopback-only authenticated integration.
+- The integration token is never copied into this repository or the generated queue.
+- Only active, confirmed memberships are considered.
+
+## Queue policy
+
+- English and Spanish destinations are stored in separate queues.
+- One global destination is selected every 120 minutes; language queues never run concurrently.
+- Planned Central Time window: 8:00 AM through 8:00 PM.
+- Planned maximum: seven group posts per day.
+- Every destination begins with `rules_review_status: pending`.
+- Publishing remains blocked while `enabled` is `false`, `dry_run` is `true`, or rules review is incomplete.
+- A Facebook warning, login request, CAPTCHA, identity check, disabled composer, or uncertain submission must stop the future worker.
+- A group ID cannot appear twice in one generated queue. Publication history must be checked before any retry.
+
+## Prepared content
+
+`data/facebook-post-templates.json` contains separate English and Spanish drafts and approved Car Daddy media paths. These drafts have not been posted.
+
+## Refreshing the paused queue
+
+Run the Facebook Group Join Assistant, confirm that the `Car Daddy` profile catalog is current, then run:
+
+```powershell
+pnpm social:prepare
+```
+
+This updates `data/facebook-group-queue.json` without publishing anything.
+
+## Activation gate
+
+Activation is a later task. Before enabling any worker:
+
+1. Review group rules and mark only destinations that permit relevant business/service posts.
+2. Approve the final English and Spanish text and image rotation.
+3. Confirm the Facebook profile session and posting window.
+4. Keep the worker disabled until the owner explicitly authorizes the first live post.
+

@@ -1,0 +1,42 @@
+{
+  "schema": "car-daddy-facebook-post-templates/v1",
+  "status": "prepared_not_approved",
+  "website": "https://car-daddy-by-torres.pages.dev/",
+  "templates": {
+    "en": [
+      {
+        "id": "intro_en",
+        "image": "/media/06_final_instagram/instagram_intro_square.jpg",
+        "text": "Car Daddy By Torres LLC provides mobile mechanic service near Gulfport and surrounding Gulf Coast communities. Gas and diesel vehicles, diagnostics, electrical repairs, brakes, equipment and boat mechanical work are available depending on the job, distance and schedule. Call or message us with your ZIP code and a description of the problem.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      },
+      {
+        "id": "diagnostics_en",
+        "image": "/media/06_final_instagram/service_posts/07_diagnostics.jpg",
+        "text": "Vehicle will not start or has an electrical problem? Car Daddy By Torres offers mobile diagnostics, battery, starter and alternator help near ZIP 39503. Send the vehicle details, location and symptoms for availability.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      },
+      {
+        "id": "towing_en",
+        "image": "/media/06_final_instagram/service_posts/12_car_dolly_towing.jpg",
+        "text": "Need vehicle transport? Car Daddy By Torres offers car dolly towing based on vehicle type, distance and availability. Message us with the pickup location, destination and vehicle details.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      }
+    ],
+    "es": [
+      {
+        "id": "intro_es",
+        "image": "/media/06_final_instagram/instagram_intro_square.jpg",
+        "text": "Car Daddy By Torres LLC ofrece servicio de mecánico móvil cerca de Gulfport y comunidades de la Costa del Golfo. Atendemos vehículos de gasolina y diésel, diagnóstico, reparaciones eléctricas, frenos, equipos y mecánica de embarcaciones según el trabajo, la distancia y la disponibilidad. Envíanos tu código postal y una descripción del problema.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      },
+      {
+        "id": "diagnostics_es",
+        "image": "/media/06_final_instagram/service_posts/07_diagnostics.jpg",
+        "text": "¿Tu vehículo no enciende o presenta una falla eléctrica? Car Daddy By Torres ofrece diagnóstico móvil y ayuda con batería, arrancador y alternador cerca del ZIP 39503. Envíanos los datos del vehículo, ubicación y síntomas para confirmar disponibilidad.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      },
+      {
+        "id": "towing_es",
+        "image": "/media/06_final_instagram/service_posts/12_car_dolly_towing.jpg",
+        "text": "¿Necesitas transportar un vehículo? Car Daddy By Torres ofrece remolque con car dolly según el tipo de vehículo, la distancia y la disponibilidad. Envíanos la ubicación de recogida, destino y datos del vehículo.\n\nhttps://car-daddy-by-torres.pages.dev/"
+      }
+    ]
+  }
+}
+
