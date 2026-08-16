@@ -92,6 +92,7 @@ export const incidentTypes = [
   'Vehicle damage',
   'Inappropriate conduct',
   'Misuse of information',
+  'Advance payment request',
   'Fraud',
   'Safety',
   'Other',

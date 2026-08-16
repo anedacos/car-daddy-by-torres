@@ -103,6 +103,8 @@ export const mockCases = [
     customer_name: 'Case Sample',
     phone: '5550102201',
     email: 'customer@example.test',
+    email_verification_status: 'Verified',
+    no_advance_payment_acknowledged: true,
     state: 'Mississippi',
     city: 'Gulfport',
     zip_code: '39503',

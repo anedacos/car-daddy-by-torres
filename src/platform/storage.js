@@ -11,6 +11,7 @@ import {
 } from '../lib/storage';
 import { createCaseEvent, generateCaseNumber, validateUpload } from './domain';
 import { mockCases, mockComplaints, mockProviderProfiles, mockProviders } from './fixtures';
+import { emailNotificationProvider } from './notifications';
 
 export const isPlatformMockMode = !isSupabaseConfigured;
 
@@ -73,7 +74,9 @@ export async function uploadPrivateFiles(bucket, files, folder, kind = 'image') 
 
 export async function submitProviderApplication(payload) {
   if (isPlatformMockMode) {
-    return platformInsert('provider_applications', { ...payload, application_status: 'Pending', account_status: 'Active' });
+    const record = await platformInsert('provider_applications', { ...payload, email_verification_status: 'Pending', application_status: 'Pending', account_status: 'Active' });
+    await platformInsert('email_outbox', emailNotificationProvider.createQueueRecord({ recipientEmail: payload.email, templateKey: 'provider_application_received' }));
+    return { ...record, email_notification_status: 'Pending' };
   }
   const { data, error } = await supabase.rpc('submit_provider_application', { p_payload: payload });
   if (error) throw error;
@@ -85,11 +88,13 @@ export async function submitServiceCase(payload) {
     const record = await platformInsert('service_cases', {
       ...payload,
       case_number: generateCaseNumber(),
+      email_verification_status: 'Pending',
       status: 'Request received',
       assigned_provider_id: null,
     });
     await platformInsert('case_events', createCaseEvent(record.id, 'request_received', 'Public request submitted.'));
-    return record;
+    await platformInsert('email_outbox', emailNotificationProvider.createQueueRecord({ recipientEmail: payload.email, templateKey: 'request_received', caseId: record.id, payload: { case_number: record.case_number } }));
+    return { ...record, email_notification_status: 'Pending' };
   }
   const { data, error } = await supabase.rpc('submit_service_case', { p_payload: payload });
   if (error) throw error;
@@ -114,6 +119,26 @@ export async function verifyCaseIdentity({ caseNumber, phone, email }) {
   return Boolean(data);
 }
 
+export async function verifyEmailToken(token) {
+  if (isPlatformMockMode) {
+    return { status: token === 'cardaddy-demo-email-token' ? 'Verified' : 'Invalid', entity_type: 'service_case' };
+  }
+  const { data, error } = await supabase.rpc('verify_email_token', { p_token: token });
+  if (error) throw error;
+  return data;
+}
+
+export async function resendEmailVerification({ entityType, reference, email }) {
+  if (isPlatformMockMode) return { status: 'Pending' };
+  const { data, error } = await supabase.rpc('resend_email_verification', {
+    p_entity_type: entityType,
+    p_reference: reference,
+    p_email: email,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function submitComplaint(identity, payload) {
   if (isPlatformMockMode) {
     const cases = await platformList('service_cases');
@@ -123,7 +148,7 @@ export async function submitComplaint(identity, payload) {
       case_id: serviceCase?.id || null,
       case_number: identity.caseNumber,
       status: 'Open',
-      severity: payload.incident_type === 'Fraud' || payload.incident_type === 'Safety' ? 'Serious' : 'Normal',
+      severity: ['Fraud', 'Safety', 'Advance payment request'].includes(payload.incident_type) ? 'Serious' : 'Normal',
     });
   }
   const { data, error } = await supabase.rpc('submit_case_complaint', {

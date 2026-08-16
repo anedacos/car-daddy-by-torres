@@ -9,6 +9,7 @@ import {
   Copy,
   FileCheck2,
   LockKeyhole,
+  MailCheck,
   Network,
   Plus,
   ShieldCheck,
@@ -30,12 +31,14 @@ import {
 } from './domain';
 import {
   isPlatformMockMode,
+  resendEmailVerification,
   seedPlatformMockData,
   submitComplaint,
   submitProviderApplication,
   submitServiceCase,
   uploadPrivateFiles,
   verifyCaseIdentity,
+  verifyEmailToken,
 } from './storage';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -62,7 +65,7 @@ const spanishOptions = {
   'No show': 'No presentación', Punctuality: 'Puntualidad', 'Billing problem': 'Problema de cobro',
   'Price different from agreed': 'Precio diferente al acordado', 'Poor repair': 'Reparación deficiente',
   'Vehicle damage': 'Daño al vehículo', 'Inappropriate conduct': 'Conducta inapropiada',
-  'Misuse of information': 'Uso indebido de información', Fraud: 'Fraude', Safety: 'Seguridad',
+  'Misuse of information': 'Uso indebido de información', 'Advance payment request': 'Solicitud de pago adelantado', Fraud: 'Fraude', Safety: 'Seguridad',
 };
 
 function tx(lang, en, es) {
@@ -264,6 +267,48 @@ function PlatformNotice({ lang }) {
   );
 }
 
+function EmailDeliveryNotice({ lang, compact = false }) {
+  return (
+    <aside className={`email-delivery-notice ${compact ? 'compact' : ''}`}>
+      <MailCheck size={24} />
+      <div>
+        <strong>{tx(lang, 'Beta communications are by email', 'Durante la beta nos comunicamos por correo')}</strong>
+        <p>{tx(
+          lang,
+          'Check that CarDaddy messages reach your inbox. If you do not see them, check Spam or Junk, mark them as "Not spam," and add CarDaddy to your contacts or safe senders.',
+          'Asegúrate de que los mensajes de CarDaddy lleguen a tu bandeja de entrada. Si no aparecen, revisa Spam o Correo no deseado, márcalos como “No es spam” y agrega CarDaddy a tus contactos o remitentes seguros.',
+        )}</p>
+        <small>{tx(lang, 'No SMS, paid WhatsApp, or paid push notifications are used during this pilot.', 'Durante este piloto no usamos SMS, WhatsApp de pago ni notificaciones push de pago.')}</small>
+      </div>
+    </aside>
+  );
+}
+
+function EmailConfirmationNotice({ lang, email, status = 'Pending', entityType, reference }) {
+  const [resendStatus, setResendStatus] = useState('');
+  const resend = async () => {
+    setResendStatus(tx(lang, 'Requesting another message...', 'Solicitando otro mensaje...'));
+    try {
+      await resendEmailVerification({ entityType, reference, email });
+      setResendStatus(tx(lang, 'Another verification message was queued.', 'Se agregó otro mensaje de verificación a la cola.'));
+    } catch (error) {
+      setResendStatus(error.message || tx(lang, 'Unable to resend yet.', 'Todavía no se puede reenviar.'));
+    }
+  };
+  return (
+    <div className="email-confirmation-notice">
+      <MailCheck size={24} />
+      <div>
+        <strong>{tx(lang, 'Now check your email', 'Ahora revisa tu correo electrónico')}</strong>
+        <p>{tx(lang, `A confirmation and verification message for ${email} was registered for delivery.`, `Registramos para envío una confirmación y verificación a ${email}.`)}</p>
+        <small>{tx(lang, 'If it is not in your inbox, check Spam or Junk, mark CarDaddy as "Not spam," and add the sender to your contacts.', 'Si no está en tu bandeja de entrada, revisa Spam o Correo no deseado, marca a CarDaddy como “No es spam” y agrega el remitente a tus contactos.')} · {tx(lang, 'Email status', 'Estado del correo')}: {status}</small>
+        {entityType && reference ? <button type="button" className="email-resend-button" onClick={resend}>{tx(lang, 'Resend verification email', 'Reenviar correo de verificación')}</button> : null}
+        {resendStatus ? <small role="status">{resendStatus}</small> : null}
+      </div>
+    </div>
+  );
+}
+
 async function readVideoDuration(file) {
   if (!file) return 0;
   return new Promise((resolve, reject) => {
@@ -374,6 +419,7 @@ function ProviderApplicationPage({ lang, shell }) {
   const [insurance, setInsurance] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!isDemoMode) return undefined;
@@ -507,21 +553,14 @@ function ProviderApplicationPage({ lang, shell }) {
       }
       const certificationFiles = await uploadPrivateFiles('provider-private', certifications, `${folder}/certifications`, 'document');
       const insuranceFiles = await uploadPrivateFiles('provider-private', insurance, `${folder}/insurance`, 'document');
-      await submitProviderApplication({
+      const result = await submitProviderApplication({
         ...form,
         media_manifest: media,
         certifications_manifest: certificationFiles,
         commercial_insurance_manifest: insuranceFiles,
       });
-      setMessage(tx(lang, 'Application received. It will be reviewed before portal access is created.', 'Solicitud recibida. Será revisada antes de crear acceso al portal.'));
-      setForm(initialProvider);
-      setToolPhotos([]);
-      setEquipmentPhotos([]);
-      setWorkSamples(createWorkSamples());
-      setCertifications([]);
-      setInsurance([]);
-      setFieldErrors({});
-      setStep(1);
+      setConfirmation({ ...result, email: form.email });
+      setMessage('');
     } catch (error) {
       setMessage(error.message || 'Unable to save the application.');
     } finally {
@@ -529,10 +568,24 @@ function ProviderApplicationPage({ lang, shell }) {
     }
   }
 
+  if (confirmation) return (
+    <ShellComponent>
+      <section className="platform-confirmation">
+        <div className="confirmation-icon"><UserRoundCheck /></div>
+        <p className="eyebrow">CarDaddy Network</p>
+        <h1>{tx(lang, 'Application received', 'Solicitud recibida')}</h1>
+        <p>{tx(lang, 'Your application is pending review. Portal access is created only after approval.', 'Tu solicitud está pendiente de revisión. El acceso al portal se crea únicamente después de la aprobación.')}</p>
+        <EmailConfirmationNotice lang={lang} email={confirmation.email} status={confirmation.email_notification_status || 'Pending'} entityType="provider_application" reference={confirmation.id} />
+        <a className="btn btn-primary" href={languages[lang].homePath}>{tx(lang, 'Return Home', 'Volver al Inicio')}</a>
+      </section>
+    </ShellComponent>
+  );
+
   return (
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy Network" title={tx(lang, 'Join the CarDaddy Network', 'Únete a la red CarDaddy')} body={tx(lang, 'Apply as an independent automotive provider. Your profile and private evidence are reviewed before approval.', 'Solicita participar como proveedor automotriz independiente. Tu perfil y evidencia privada se revisan antes de aprobarse.')} />
       {isDemoMode ? <div className="demo-mode-banner"><AlertTriangle size={20} /><div><strong>{tx(lang, 'Temporary review mode', 'Modo temporal de revisión')}</strong><span>{tx(lang, 'Every step contains fictional test data. Demo evidence loads automatically on the final step and any submitted application is clearly marked [DEMO].', 'Todos los pasos contienen datos ficticios de prueba. La evidencia demo se carga automáticamente en el último paso y cualquier solicitud enviada queda marcada claramente como [DEMO].')}</span></div></div> : null}
+      <EmailDeliveryNotice lang={lang} />
       <section className={`provider-payment-policy ${form.no_advance_fee_acknowledged ? 'is-accepted' : ''}`} aria-labelledby="provider-payment-policy-title">
         <div className="provider-payment-policy-icon"><ShieldCheck size={28} /></div>
         <div className="provider-payment-policy-copy">
@@ -658,27 +711,56 @@ const initialCase = {
   problem_description: '', vehicle_starts: 'Unknown', vehicle_moves: 'Unknown', service_requested: 'Diagnostics',
   specialty_needed: 'General automotive mechanics', urgency: 'Immediate', preferred_date: '', preferred_time: '',
   preferred_language: 'English', share_consent: false, platform_notice_acknowledged: false,
+  no_advance_payment_acknowledged: false, source: '', campaign: '',
 };
 
 function ServiceRequestPage({ lang, shell }) {
   const ShellComponent = shell;
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ ...initialCase, preferred_language: lang === 'es' ? 'Spanish' : 'English' });
+  const [form, setForm] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      ...initialCase,
+      preferred_language: lang === 'es' ? 'Spanish' : 'English',
+      source: params.get('source') || '',
+      campaign: params.get('campaign') || '',
+    };
+  });
   const [photos, setPhotos] = useState([]);
   const [videos, setVideos] = useState([]);
   const [message, setMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [confirmation, setConfirmation] = useState(null);
   const [busy, setBusy] = useState(false);
-  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const set = (key, value) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => ({ ...current, [key]: undefined }));
+  };
+
+  function showCaseErrors(errors) {
+    setFieldErrors(errors);
+    setMessage(tx(lang, 'Check the fields marked in red before continuing.', 'Revisa los campos marcados en rojo antes de continuar.'));
+    const firstKey = Object.keys(errors)[0];
+    requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-field="${firstKey}"]`);
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target?.querySelector('input, select, textarea')?.focus({ preventScroll: true });
+    });
+  }
 
   function next() {
-    const required = step === 1
-      ? [form.customer_name, form.phone, form.city, form.zip_code, form.approximate_location]
-      : [form.vehicle_year, form.vehicle_make, form.vehicle_model, form.problem_description];
-    if (required.some((value) => !value)) {
-      setMessage(tx(lang, 'Complete the required fields before continuing.', 'Completa los campos requeridos antes de continuar.'));
+    const requiredKeys = step === 1
+      ? ['customer_name', 'phone', 'email', 'state', 'city', 'zip_code', 'approximate_location']
+      : ['vehicle_year', 'vehicle_make', 'vehicle_model', 'problem_description'];
+    const errors = Object.fromEntries(requiredKeys.filter((key) => !form[key]).map((key) => [key, tx(lang, 'This field is required.', 'Este campo es obligatorio.')]));
+    if (step === 1 && form.phone && !isValidUsPhone(form.phone)) errors.phone = tx(lang, 'Enter a 10-digit phone number.', 'Ingresa un teléfono de 10 dígitos.');
+    if (step === 1 && form.email && !isValidEmail(form.email)) errors.email = tx(lang, 'Enter a valid email address, such as name@example.com.', 'Ingresa un correo válido, por ejemplo nombre@ejemplo.com.');
+    if (step === 1 && form.zip_code && !isValidZipCode(form.zip_code)) errors.zip_code = tx(lang, 'Enter a 5-digit ZIP code.', 'Ingresa un código postal de 5 dígitos.');
+    if (Object.keys(errors).length) {
+      showCaseErrors(errors);
       return;
     }
+    setFieldErrors({});
     setMessage('');
     setStep((current) => current + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -686,8 +768,8 @@ function ServiceRequestPage({ lang, shell }) {
 
   async function submit(event) {
     event.preventDefault();
-    if (!form.share_consent || !form.platform_notice_acknowledged) {
-      setMessage(tx(lang, 'Accept both required acknowledgements.', 'Acepta ambas autorizaciones requeridas.'));
+    if (!form.share_consent || !form.platform_notice_acknowledged || !form.no_advance_payment_acknowledged) {
+      setMessage(tx(lang, 'Accept every required acknowledgement.', 'Acepta todas las autorizaciones requeridas.'));
       return;
     }
     setBusy(true);
@@ -713,9 +795,10 @@ function ServiceRequestPage({ lang, shell }) {
         <div className="confirmation-icon"><FileCheck2 /></div>
         <p className="eyebrow">CarDaddy</p>
         <h1>{tx(lang, 'Request received', 'Solicitud recibida')}</h1>
-        <p>{tx(lang, 'Keep this case number. CarDaddy will review the request and look for a compatible independent provider.', 'Guarda este número de caso. CarDaddy revisará la solicitud y buscará un proveedor independiente compatible.')}</p>
+        <p>{tx(lang, 'Keep this case number. CarDaddy will look for a compatible independent provider without promising availability until one accepts.', 'Guarda este número de caso. CarDaddy buscará un proveedor independiente compatible sin prometer disponibilidad hasta que uno acepte.')}</p>
         <strong className="case-number">{confirmation.case_number}</strong>
         <p>{tx(lang, 'Initial status:', 'Estado inicial:')} {confirmation.status}</p>
+        <EmailConfirmationNotice lang={lang} email={form.email} status={confirmation.email_notification_status || 'Pending'} entityType="service_case" reference={confirmation.case_number} />
         <a className="btn btn-primary" href={languages[lang].homePath}>{tx(lang, 'Return Home', 'Volver al Inicio')}</a>
       </section>
     </ShellComponent>
@@ -724,16 +807,31 @@ function ServiceRequestPage({ lang, shell }) {
   return (
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy" title={tx(lang, 'Request Service', 'Solicitar servicio')} body={tx(lang, 'Tell us what happened. A complete request helps us identify compatible independent providers.', 'Cuéntanos qué ocurrió. Una solicitud completa nos ayuda a identificar proveedores independientes compatibles.')} />
-      <WizardProgress step={step} labels={tx(lang, ['Contact', 'Vehicle', 'Schedule & consent'], ['Contacto', 'Vehículo', 'Horario y autorización'])} />
-      <form className="platform-wizard" onSubmit={submit}>
+      <section className={`provider-payment-policy customer-payment-policy ${form.no_advance_payment_acknowledged ? 'is-accepted' : ''}`} aria-labelledby="customer-payment-policy-title">
+        <div className="provider-payment-policy-icon"><ShieldCheck size={28} /></div>
+        <div className="provider-payment-policy-copy">
+          <p className="eyebrow">{tx(lang, 'Your payment protection', 'Tu protección de pago')}</p>
+          <h2 id="customer-payment-policy-title">{tx(lang, 'Do not pay anything until the mechanic is in front of your vehicle', 'No pagues nada hasta que el mecánico esté frente a tu vehículo')}</h2>
+          <p>{tx(lang, 'CarDaddy does not request advance payments. Do not pay deposits, reservations, travel or mobilization fees, or send money through Cash App, Zelle, or another method before the provider physically arrives.', 'CarDaddy no solicita pagos por adelantado. No pagues depósitos, reservas, tarifas de viaje o movilización ni envíes dinero por Cash App, Zelle u otro medio antes de que el proveedor llegue físicamente.')}</p>
+          <p className="provider-payment-warning">{tx(lang, 'After arrival, you may pay the inspection fee agreed in advance before inspection or repair begins.', 'Después de su llegada, podrás pagar la tarifa de inspección acordada previamente antes de que comience la inspección o reparación.')}</p>
+          <label className="provider-payment-acceptance">
+            <input type="checkbox" checked={form.no_advance_payment_acknowledged} onChange={(event) => set('no_advance_payment_acknowledged', event.target.checked)} />
+            <span><strong>{tx(lang, 'I understand and agree', 'Entiendo y acepto')}</strong><small>{tx(lang, 'I will not pay anything before the provider physically arrives. Once present, I may pay the agreed inspection fee before service begins.', 'No pagaré nada antes de que el proveedor llegue físicamente. Una vez presente, podré pagar la tarifa de inspección acordada antes de comenzar el servicio.')}</small></span>
+          </label>
+        </div>
+      </section>
+      {form.no_advance_payment_acknowledged ? <>
+        <EmailDeliveryNotice lang={lang} />
+        <WizardProgress step={step} labels={tx(lang, ['Contact', 'Vehicle', 'Schedule & consent'], ['Contacto', 'Vehículo', 'Horario y autorización'])} />
+        <form className="platform-wizard" onSubmit={submit}>
         {step === 1 ? <div className="form-grid">
-          <Field label={tx(lang, 'Name', 'Nombre')} required><input value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Phone', 'Teléfono')} required><input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Email, optional', 'Correo, opcional')}><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
-          <Field label={tx(lang, 'State', 'Estado')} required><select value={form.state} onChange={(e) => set('state', e.target.value)}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-          <Field label={tx(lang, 'City', 'Ciudad')} required><input value={form.city} onChange={(e) => set('city', e.target.value)} /></Field>
-          <Field label={tx(lang, 'ZIP code', 'Código postal')} required><input inputMode="numeric" value={form.zip_code} onChange={(e) => set('zip_code', e.target.value)} /></Field>
-          <label className="field full"><span>{tx(lang, 'Address or approximate location', 'Dirección o ubicación aproximada')} *</span><textarea value={form.approximate_location} onChange={(e) => set('approximate_location', e.target.value)} /></label>
+          <Field label={tx(lang, 'Name', 'Nombre')} required fieldKey="customer_name" invalid={Boolean(fieldErrors.customer_name)} error={fieldErrors.customer_name}><input value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} /></Field>
+          <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only. Used only when a provider has accepted.', '10 dígitos, solo números. Se usa únicamente cuando un proveedor haya aceptado.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" maxLength="10" value={form.phone} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
+          <Field label={tx(lang, 'Email', 'Correo')} required hint={tx(lang, 'Required for verification and all beta communications.', 'Obligatorio para verificación y todas las comunicaciones de la beta.')} fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
+          <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select value={form.state} onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
+          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="service-city-options" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="service-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
+          <Field label={tx(lang, 'ZIP code', 'Código postal')} required fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" maxLength="5" value={form.zip_code} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
+          <Field label={tx(lang, 'Address or approximate location', 'Dirección o ubicación aproximada')} required fieldKey="approximate_location" invalid={Boolean(fieldErrors.approximate_location)} error={fieldErrors.approximate_location}><textarea value={form.approximate_location} onChange={(e) => set('approximate_location', e.target.value)} /></Field>
         </div> : null}
 
         {step === 2 ? <div className="form-grid">
@@ -761,11 +859,13 @@ function ServiceRequestPage({ lang, shell }) {
           <div className="consent-stack full">
             <BooleanChoice label={tx(lang, 'I authorize CarDaddy to share this request and my contact information with a selected compatible independent provider.', 'Autorizo a CarDaddy a compartir esta solicitud y mis datos de contacto con un proveedor independiente compatible seleccionado.')} checked={form.share_consent} onChange={(value) => set('share_consent', value)} />
             <BooleanChoice label={tx(lang, 'I understand the platform notice, including direct pricing, payment, repair, and warranty arrangements with the provider.', 'Entiendo el aviso de plataforma, incluyendo los acuerdos directos de precio, pago, reparación y garantía con el proveedor.')} checked={form.platform_notice_acknowledged} onChange={(value) => set('platform_notice_acknowledged', value)} />
+            <div className="payment-policy-confirmed"><Check size={17} /><span>{tx(lang, 'No-advance-payment protection accepted.', 'Protección contra pagos adelantados aceptada.')}</span></div>
           </div>
         </div> : null}
         {message ? <p className="status-message">{message}</p> : null}
         <WizardActions step={step} total={3} back={() => setStep((current) => current - 1)} next={next} submitLabel={tx(lang, 'Create Service Case', 'Crear Caso de Servicio')} busy={busy} lang={lang} />
-      </form>
+        </form>
+      </> : null}
     </ShellComponent>
   );
 }
@@ -872,7 +972,43 @@ function PortalPage({ lang, shell }) {
             <a className="btn btn-primary" href="/admin"><LockKeyhole size={18} /> {tx(lang, 'Open Administration', 'Abrir administración')}</a>
           </article>
         </div>
-        <div className="private-file-note"><Clock3 size={20} /><span>{tx(lang, 'No real notifications or payments are active in this MVP.', 'No hay notificaciones ni pagos reales activos en este MVP.')}</span></div>
+        <div className="private-file-note"><MailCheck size={20} /><span>{tx(lang, 'Beta communications use email and portal notifications only. SMS and paid messaging remain disabled.', 'Las comunicaciones de la beta usan únicamente correo y notificaciones del portal. Los SMS y la mensajería de pago permanecen desactivados.')}</span></div>
+      </section>
+    </ShellComponent>
+  );
+}
+
+function VerifyEmailPage({ lang, shell }) {
+  const ShellComponent = shell;
+  const [result, setResult] = useState({ status: 'Checking' });
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    if (!token) {
+      setResult({ status: 'Invalid' });
+      return;
+    }
+    verifyEmailToken(token)
+      .then(setResult)
+      .catch(() => setResult({ status: 'Invalid' }));
+  }, []);
+  const verified = result.status === 'Verified';
+  const expired = result.status === 'Expired';
+  return (
+    <ShellComponent>
+      <section className="platform-confirmation">
+        <div className="confirmation-icon">{verified ? <MailCheck /> : <AlertTriangle />}</div>
+        <p className="eyebrow">CarDaddy</p>
+        <h1>{result.status === 'Checking'
+          ? tx(lang, 'Verifying your email...', 'Verificando tu correo...')
+          : verified ? tx(lang, 'Email verified', 'Correo verificado')
+            : expired ? tx(lang, 'Verification link expired', 'El enlace de verificación venció')
+              : tx(lang, 'Invalid verification link', 'Enlace de verificación inválido')}</h1>
+        <p>{verified
+          ? tx(lang, 'Your email is ready for CarDaddy communications. Keep the sender in your contacts and continue checking Spam or Junk if a future message is missing.', 'Tu correo está listo para las comunicaciones de CarDaddy. Mantén al remitente en tus contactos y sigue revisando Spam o Correo no deseado si falta algún mensaje futuro.')
+          : expired
+            ? tx(lang, 'For your protection, verification links expire after 24 hours. Request a new message from the application or case confirmation.', 'Para tu protección, los enlaces vencen después de 24 horas. Solicita un nuevo mensaje desde la confirmación de la solicitud o del caso.')
+            : tx(lang, 'This link is incomplete, invalid, or has already been replaced. Do not share verification links with anyone.', 'Este enlace está incompleto, es inválido o ya fue reemplazado. No compartas enlaces de verificación con nadie.')}</p>
+        <a className="btn btn-primary" href={languages[lang].homePath}>{tx(lang, 'Return Home', 'Volver al Inicio')}</a>
       </section>
     </ShellComponent>
   );
@@ -883,6 +1019,7 @@ export function getPlatformRoute(pathname) {
   if (clean === '/solicitar-servicio') return 'request';
   if (clean === '/unete-a-la-red') return 'provider';
   if (clean === '/reportar-problema') return 'complaint';
+  if (clean === '/verificar-correo') return 'verify-email';
   if (clean === '/portal') return 'portal';
   return null;
 }
@@ -905,6 +1042,7 @@ export function PlatformPage({ route, lang, setLang, header, footer }) {
   }
   if (route === 'provider') return <ProviderApplicationPage lang={lang} shell={Shell} />;
   if (route === 'complaint') return <ReportProblemPage lang={lang} shell={Shell} />;
+  if (route === 'verify-email') return <VerifyEmailPage lang={lang} shell={Shell} />;
   if (route === 'portal') return <PortalPage lang={lang} shell={Shell} />;
   return <ServiceRequestPage lang={lang} shell={Shell} />;
 }

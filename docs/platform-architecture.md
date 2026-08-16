@@ -64,8 +64,10 @@ flowchart LR
   AD --> DB
   AD --> S
   PP[Approved provider portal - Phase 2] --> DB
-  DB --> N[Internal notifications]
-  N -. later .-> E[Email / SMS / push]
+  DB --> N[Durable notification outbox]
+  N --> E[Email provider - free beta]
+  N --> P2[Portal notifications]
+  N -. future, disabled .-> O[SMS / WhatsApp / push]
 ```
 
 ## User Flows
@@ -96,7 +98,7 @@ Admin validates a case, reviews advisory compatible providers, selects one, reco
 | Customer operations | `service_cases`, `case_events` | Case data, unique number, assignment and immutable timeline. |
 | Matching | `case_candidates`, `opportunities` | Compatibility ranking and offer/response history. |
 | Quality | `complaints`, `ratings` | Private incidents, responses, evidence, and customer feedback. |
-| Communication | `notification_templates`, `notifications` | Editable bilingual internal notifications first. |
+| Communication | `notification_templates`, `notifications`, `email_verifications`, `email_outbox` | Bilingual portal notifications plus durable email verification and delivery queue. |
 | Configuration | `platform_settings`, `membership_plans` | Configurable times, beta and future billing rules. |
 | Governance | `admin_actions` | Administrative audit trail without sensitive log payloads. |
 
@@ -169,7 +171,7 @@ Counsel licensed in Mississippi, followed by Louisiana and Alabama, should revie
 - ADR-002: Isolate new code under `src/platform` and new database objects in a dated migration.
 - ADR-003: Use Supabase Auth/RLS/private Storage; retain password/localStorage only as an explicit development mock.
 - ADR-004: Keep assignment manual in Phase 1; compatibility scoring is advisory and test-covered.
-- ADR-005: Keep notifications internal and billing disabled until explicit configuration and legal/security review.
+- ADR-005: During the free beta, enable only email and portal channels. Keep SMS, paid WhatsApp, push, and billing disabled.
 
 ## Production Status
 
@@ -186,7 +188,7 @@ Required before broad public promotion:
 2. Add malware scanning, automated retention/deletion, privacy export/deletion procedures, backups, monitoring, and alerts.
 3. Complete accessibility, cross-browser, and end-to-end tests with a dedicated staging project.
 4. Have all draft notices and agreements reviewed by counsel.
-5. Configure real notification providers only after consent, templates, unsubscribe rules, and sender verification are approved.
+5. Connect a free transactional email account, verify the sender, and deploy the outbox worker after consent, templates, unsubscribe rules, and sender verification are approved.
 
 Provider applications currently receive a 90-day retention date. Rejection does not delete evidence automatically; an authenticated administrator can permanently delete a rejected or ineligible application and its private Storage objects. Automated expiry remains disabled until the owner approves the final retention policy and legal counsel reviews it.
 
@@ -194,5 +196,5 @@ Provider applications currently receive a 90-day retention date. Rejection does 
 
 - Add branded short links only after the production domain is final.
 - Generate prepared bilingual invitation messages for provider applications and customer service requests.
-- Keep link creation and delivery separate: the system may prepare copy, but it must not send SMS, WhatsApp, email, or social messages automatically during the MVP.
+- Keep social link creation and delivery separate. Operational emails are queued transactionally; SMS, paid WhatsApp, push, and automatic social messages remain disabled.
 - Record campaign/source parameters without placing customer or provider personal information in the URL.

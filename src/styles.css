@@ -1016,6 +1016,72 @@ h3 {
   line-height: 1.5;
 }
 
+.email-delivery-notice {
+  align-items: flex-start;
+  background: #fff8dc;
+  border: 1px solid #e5c14e;
+  border-left: 5px solid #f5b301;
+  display: flex;
+  gap: 12px;
+  margin: 0 auto 20px;
+  max-width: 1060px;
+  padding: 15px 17px;
+}
+
+.email-delivery-notice > svg,
+.email-confirmation-notice > svg {
+  color: #9a6500;
+  flex: 0 0 auto;
+}
+
+.email-delivery-notice > div,
+.email-confirmation-notice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.email-delivery-notice p,
+.email-confirmation-notice p {
+  color: #4e4630;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.email-delivery-notice small,
+.email-confirmation-notice small {
+  color: #6d6246;
+  line-height: 1.45;
+}
+
+.email-delivery-notice.compact {
+  margin-bottom: 0;
+}
+
+.email-confirmation-notice {
+  align-items: flex-start;
+  background: #fff8dc;
+  border-left: 5px solid #f5b301;
+  display: flex;
+  gap: 12px;
+  margin: 24px auto;
+  max-width: 680px;
+  padding: 17px 18px;
+  text-align: left;
+}
+
+.email-resend-button {
+  background: transparent;
+  border: 0;
+  color: #7a4f00;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  justify-self: start;
+  padding: 5px 0 0;
+  text-decoration: underline;
+}
+
 .provider-payment-policy {
   background: white;
   border: 2px solid #f5b301;
@@ -1062,6 +1128,10 @@ h3 {
 .provider-payment-policy-copy h2 {
   font-size: 28px;
   line-height: 1.15;
+}
+
+.customer-payment-policy .provider-payment-policy-copy h2 {
+  max-width: 860px;
 }
 
 .provider-payment-policy-copy > p:not(.eyebrow) {

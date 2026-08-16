@@ -934,7 +934,7 @@ function AdminApp({ lang }) {
           <section className="admin-table">
             <h2>Settings / Configuration</h2>
             <p>Supabase: {isSupabaseConfigured ? 'Configured; authenticated admin policies required' : 'Mock/local mode'}</p>
-            <p>Notifications: internal templates only. Email, SMS, push, and WhatsApp delivery are disabled.</p>
+            <p>Beta notifications: email outbox and portal enabled. SMS, paid WhatsApp, and push delivery disabled.</p>
             <p>Membership billing: disabled for the free beta.</p>
             <p>Assignment: manual in Phase 1. Compatibility scoring is advisory until Phase 3.</p>
             <p>Legacy records: {leads.length} requests, {apps.length} applications, {invoices.length} invoices.</p>

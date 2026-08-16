@@ -241,6 +241,7 @@ function ProviderReviews({ providers, reload }) {
                   <LabeledValue label="Provider name" icon={UserRound}>{provider.full_name}</LabeledValue>
                   {provider.business_name ? <LabeledValue label="Business" icon={Wrench}>{provider.business_name}</LabeledValue> : null}
                   <LabeledValue label="Email" icon={Mail}><a href={`mailto:${provider.email}`}>{provider.email}</a></LabeledValue>
+                  <LabeledValue label="Email verification" icon={Mail}>{provider.email_verification_status || 'Not captured'}</LabeledValue>
                   <LabeledValue label="Phone" icon={Phone}><a href={`tel:${provider.phone}`}>{formatPhone(provider.phone)}</a></LabeledValue>
                   <LabeledValue label="Verifiable experience" icon={FileCheck2}>{provider.years_experience} year{Number(provider.years_experience) === 1 ? '' : 's'}</LabeledValue>
                 </div>
@@ -331,9 +332,9 @@ function CaseManagement({ cases, providers, events, reload }) {
           return <article className="case-admin-row" key={serviceCase.id}>
             <header><div><strong>{serviceCase.case_number}</strong><span>{serviceCase.status}</span></div><small>{new Date(serviceCase.created_at).toLocaleString()}</small></header>
             <div className="case-admin-grid">
-              <div><b>Customer</b><p>{serviceCase.customer_name}<br />{serviceCase.phone}<br />{serviceCase.email}</p></div>
+              <div><b>Customer</b><p>{serviceCase.customer_name}<br />{serviceCase.phone}<br />{serviceCase.email}<br /><small>Email: {serviceCase.email_verification_status || 'Not captured'}</small></p></div>
               <div><b>Location / vehicle</b><p>{serviceCase.city}, {serviceCase.state} {serviceCase.zip_code}<br />{serviceCase.vehicle_year} {serviceCase.vehicle_make} {serviceCase.vehicle_model}</p></div>
-              <div><b>Request</b><p>{serviceCase.service_requested}<br />{serviceCase.specialty_needed}<br />{serviceCase.urgency}</p></div>
+              <div><b>Request</b><p>{serviceCase.service_requested}<br />{serviceCase.specialty_needed}<br />{serviceCase.urgency}{serviceCase.source ? <><br /><small>Source: {serviceCase.source}{serviceCase.campaign ? ` / ${serviceCase.campaign}` : ''}</small></> : null}</p></div>
               <div><b>Evidence</b><PrivateFiles manifest={serviceCase.media_manifest || []} /></div>
             </div>
             <p className="case-problem">{serviceCase.problem_description}</p>
@@ -382,19 +383,20 @@ function SearchField({ value, onChange }) {
 }
 
 export function PlatformAdmin({ active }) {
-  const [data, setData] = useState({ providers: [], networkProviders: [], cases: [], complaints: [], events: [] });
+  const [data, setData] = useState({ providers: [], networkProviders: [], cases: [], complaints: [], events: [], emailOutbox: [] });
   const [loading, setLoading] = useState(true);
   const reload = async () => {
     setLoading(true);
     if (isPlatformMockMode) await seedPlatformMockData();
-    const [providers, networkProviders, cases, complaints, events] = await Promise.all([
+    const [providers, networkProviders, cases, complaints, events, emailOutbox] = await Promise.all([
       listPlatformRecords('provider_applications'),
       listPlatformRecords('provider_profiles'),
       listPlatformRecords('service_cases'),
       listPlatformRecords('complaints'),
       listPlatformRecords('case_events'),
+      listPlatformRecords('email_outbox'),
     ]);
-    setData({ providers, networkProviders, cases, complaints, events });
+    setData({ providers, networkProviders, cases, complaints, events, emailOutbox });
     setLoading(false);
   };
   useEffect(() => { reload(); }, []);
@@ -408,6 +410,8 @@ export function PlatformAdmin({ active }) {
     completedCases: data.cases.filter((serviceCase) => serviceCase.status === 'Completed').length,
     openComplaints: data.complaints.filter((complaint) => !['Resolved', 'Closed'].includes(complaint.status)).length,
     seriousIncidents: data.complaints.filter((complaint) => ['Serious', 'Critical'].includes(complaint.severity) && !['Resolved', 'Closed'].includes(complaint.status)).length,
+    pendingEmails: data.emailOutbox.filter((email) => ['Pending', 'Processing'].includes(email.status)).length,
+    failedEmails: data.emailOutbox.filter((email) => email.status === 'Failed').length,
   }), [data]);
 
   if (loading) return <section className="admin-table"><p>Loading operational data...</p></section>;
@@ -427,6 +431,8 @@ export function PlatformAdmin({ active }) {
         <Metric label="Completed cases" value={metrics.completedCases} />
         <Metric label="Open complaints" value={metrics.openComplaints} alert={metrics.openComplaints > 0} />
         <Metric label="Serious incidents" value={metrics.seriousIncidents} alert={metrics.seriousIncidents > 0} />
+        <Metric label="Emails awaiting delivery" value={metrics.pendingEmails} alert={metrics.pendingEmails > 0} />
+        <Metric label="Email delivery errors" value={metrics.failedEmails} alert={metrics.failedEmails > 0} />
         <article><ShieldAlert size={28} /><strong>--</strong><span>Average assignment time</span><small>Starts after production event data exists.</small></article>
       </div>
     </>
