@@ -293,7 +293,7 @@ const initialProvider = {
   media_publicity_consent: false,
 };
 
-const createWorkSamples = () => Array.from({ length: 3 }, () => ({ photos: [], videos: [] }));
+const createWorkSamples = () => Array.from({ length: 3 }, () => ({ description: '', services: [], photos: [], videos: [] }));
 
 function ProviderApplicationPage({ lang, shell }) {
   const ShellComponent = shell;
@@ -378,7 +378,16 @@ function ProviderApplicationPage({ lang, shell }) {
     const evidenceErrors = {};
     workSamples.forEach((sample, index) => {
       if (!sample.photos.length) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Add at least one photo for this completed job.', 'Agrega al menos una foto de este trabajo realizado.');
+      else if (!sample.description.trim()) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Explain what you diagnosed or repaired on this job.', 'Explica qué diagnosticaste o reparaste en este trabajo.');
+      else if (!sample.services.length) evidenceErrors[`work_sample_${index}`] = tx(lang, 'Select the services this job demonstrates.', 'Selecciona los servicios que demuestra este trabajo.');
     });
+    const supportedServices = new Set(workSamples.flatMap((sample) => sample.services));
+    const unsupportedServices = form.services_offered.filter((service) => !supportedServices.has(service));
+    if (unsupportedServices.length) evidenceErrors.work_sample_services = tx(
+      lang,
+      `Link evidence to every selected service. Still unsupported: ${unsupportedServices.join(', ')}.`,
+      `Vincula evidencia con cada servicio seleccionado. Aún sin sustento: ${unsupportedServices.map((service) => optionLabel(lang, service)).join(', ')}.`,
+    );
     if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged) {
       evidenceErrors.required_consents = tx(lang, 'Accept the required terms and independent-provider acknowledgement.', 'Acepta los términos requeridos y la confirmación de proveedor independiente.');
     }
@@ -401,9 +410,10 @@ function ProviderApplicationPage({ lang, shell }) {
       ];
       for (let index = 0; index < workSamples.length; index += 1) {
         const sample = workSamples[index];
+        const evidenceDetails = { description: sample.description.trim(), services: sample.services, work_sample: index + 1 };
         media.push(
-          ...(await uploadPrivateFiles('provider-private', sample.photos, `${folder}/work-sample-${index + 1}/photos`, 'image')).map((item) => ({ ...item, category: `work_sample_${index + 1}_photo` })),
-          ...(await uploadPrivateFiles('provider-private', sample.videos, `${folder}/work-sample-${index + 1}/videos`, 'video')).map((item) => ({ ...item, category: `work_sample_${index + 1}_video` })),
+          ...(await uploadPrivateFiles('provider-private', sample.photos, `${folder}/work-sample-${index + 1}/photos`, 'image')).map((item) => ({ ...item, ...evidenceDetails, category: `work_sample_${index + 1}_photo` })),
+          ...(await uploadPrivateFiles('provider-private', sample.videos, `${folder}/work-sample-${index + 1}/videos`, 'video')).map((item) => ({ ...item, ...evidenceDetails, category: `work_sample_${index + 1}_video` })),
         );
       }
       const certificationFiles = await uploadPrivateFiles('provider-private', certifications, `${folder}/certifications`, 'document');
@@ -452,7 +462,10 @@ function ProviderApplicationPage({ lang, shell }) {
         {step === 2 ? <div className="form-grid">
           <CheckboxGroup lang={lang} label={tx(lang, 'Specialties', 'Especialidades')} options={specialties} values={form.specialties} onChange={(value) => set('specialties', value)} required fieldKey="specialties" invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
           <CheckboxGroup lang={lang} label={tx(lang, 'Vehicle types served', 'Tipos de vehículos que atiendes')} options={vehicleTypes} values={form.vehicle_types_served} onChange={(value) => set('vehicle_types_served', value)} required fieldKey="vehicle_types_served" invalid={Boolean(fieldErrors.vehicle_types_served)} error={fieldErrors.vehicle_types_served} />
-          <CheckboxGroup lang={lang} label={tx(lang, 'Services performed', 'Servicios que realizas')} options={serviceTypes} values={form.services_offered} onChange={(value) => set('services_offered', value)} required fieldKey="services_offered" invalid={Boolean(fieldErrors.services_offered)} error={fieldErrors.services_offered} />
+          <CheckboxGroup lang={lang} label={tx(lang, 'Services performed', 'Servicios que realizas')} options={serviceTypes} values={form.services_offered} onChange={(value) => {
+            set('services_offered', value);
+            setWorkSamples((current) => current.map((sample) => ({ ...sample, services: sample.services.filter((service) => value.includes(service)) })));
+          }} required fieldKey="services_offered" invalid={Boolean(fieldErrors.services_offered)} error={fieldErrors.services_offered} />
           <details className="optional-form-section full">
             <summary>{tx(lang, 'Optional: services you prefer not to perform', 'Opcional: servicios que prefieres no realizar')}</summary>
             <CheckboxGroup lang={lang} label={tx(lang, 'Do not match me with these services', 'No asignarme estos servicios')} options={[...serviceTypes, 'Bodywork', 'Paint']} values={form.services_not_offered} onChange={(value) => set('services_not_offered', value)} />
@@ -491,18 +504,21 @@ function ProviderApplicationPage({ lang, shell }) {
         {step === 4 ? <div className="form-grid">
           <FilePicker label={tx(lang, 'Your tools', 'Tus herramientas')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} hint={tx(lang, 'Show the hand tools and diagnostic tools you own, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Muestra las herramientas manuales y de diagnóstico que posees, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
           <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
-          <div className="work-samples full">
+          <div className={`work-samples full ${fieldErrors.work_sample_services ? 'field-invalid' : ''}`} data-field="work_sample_services">
             <div className="work-samples-heading">
-              <div><strong>{tx(lang, 'Three previous jobs', 'Tres trabajos anteriores')}</strong><p>{tx(lang, 'Add at least one photo for each completed job. Videos are optional and may be up to five minutes each.', 'Agrega al menos una foto de cada trabajo realizado. Los videos son opcionales y pueden durar hasta cinco minutos cada uno.')}</p></div>
+              <div><strong>{tx(lang, 'Three previous jobs', 'Tres trabajos anteriores')}</strong><p>{tx(lang, 'Explain each completed job, link it to the services it demonstrates, and add at least one photo. Videos are optional and may be up to five minutes each.', 'Explica cada trabajo realizado, vincúlalo con los servicios que demuestra y agrega al menos una foto. Los videos son opcionales y pueden durar hasta cinco minutos cada uno.')}</p></div>
             </div>
             {workSamples.map((sample, index) => <article className={`work-sample ${fieldErrors[`work_sample_${index}`] ? 'field-invalid' : ''}`} data-field={`work_sample_${index}`} key={index}>
               <header><span>{String(index + 1).padStart(2, '0')}</span><strong>{tx(lang, `Completed job ${index + 1}`, `Trabajo realizado ${index + 1}`)}</strong></header>
+              <Field label={tx(lang, 'What did you diagnose or repair?', '¿Qué diagnosticaste o reparaste?')} required hint={tx(lang, 'Briefly describe the problem, the work performed, and the result.', 'Describe brevemente el problema, el trabajo realizado y el resultado.')}><textarea value={sample.description} onChange={(event) => setWorkSample(index, 'description', event.target.value)} /></Field>
+              <CheckboxGroup lang={lang} label={tx(lang, 'Services demonstrated by this job', 'Servicios demostrados por este trabajo')} options={form.services_offered} values={sample.services} onChange={(values) => setWorkSample(index, 'services', values)} required />
               <div className="work-sample-fields">
                 <FilePicker label={tx(lang, 'Job photos', 'Fotos del trabajo')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setWorkSample(index, 'photos', files)} required />
                 <FilePicker label={tx(lang, 'Job video, optional', 'Video del trabajo, opcional')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setWorkSample(index, 'videos', files)} hint={tx(lang, 'Up to five minutes.', 'Máximo cinco minutos.')} />
               </div>
               {fieldErrors[`work_sample_${index}`] ? <small className="field-error" role="alert">{fieldErrors[`work_sample_${index}`]}</small> : null}
             </article>)}
+            {fieldErrors.work_sample_services ? <small className="field-error" role="alert">{fieldErrors.work_sample_services}</small> : null}
           </div>
           <FilePicker label={tx(lang, 'Certifications, optional', 'Certificaciones, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setCertifications} hint={tx(lang, 'Upload only documents you want CarDaddy to review privately.', 'Sube únicamente los documentos que deseas que CarDaddy revise de forma privada.')} />
           <FilePicker label={tx(lang, 'Commercial insurance, optional', 'Seguro comercial, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setInsurance} hint={tx(lang, 'Upload proof only if you currently have commercial coverage.', 'Sube el comprobante solamente si actualmente posees cobertura comercial.')} />

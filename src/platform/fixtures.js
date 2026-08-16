@@ -20,8 +20,21 @@ export const mockProviders = [
     application_status: 'Pending',
     account_status: 'Active',
     availability_status: 'Available',
+    available_days: ['Monday', 'Tuesday', 'Saturday'],
+    availability_schedule: {
+      Monday: [{ start: '08:00', end: '17:00' }],
+      Tuesday: [{ start: '08:00', end: '17:00' }],
+      Saturday: [{ start: '09:00', end: '14:00' }],
+    },
+    scheduled_available: true,
     emergency_available: true,
-    media_manifest: [],
+    media_manifest: [
+      { bucket: 'provider-private', path: 'mock://tools/toolbox.jpg', name: 'organized-tools.jpg', type: 'image/jpeg', category: 'tools' },
+      { bucket: 'provider-private', path: 'mock://equipment/service-vehicle.jpg', name: 'service-vehicle.jpg', type: 'image/jpeg', category: 'equipment' },
+      { bucket: 'provider-private', path: 'mock://work-1/diagnosis.jpg', name: 'electrical-diagnosis.jpg', type: 'image/jpeg', category: 'work_sample_1_photo', description: 'Diagnosed an intermittent no-start condition, repaired the damaged starter circuit, and verified reliable operation.', services: ['Electrical diagnostics', 'General automotive mechanics'] },
+      { bucket: 'provider-private', path: 'mock://work-1/test.mp4', name: 'post-repair-test.mp4', type: 'video/mp4', category: 'work_sample_1_video', description: 'Diagnosed an intermittent no-start condition, repaired the damaged starter circuit, and verified reliable operation.', services: ['Electrical diagnostics', 'General automotive mechanics'] },
+    ],
+    certifications_manifest: [{ bucket: 'provider-private', path: 'mock://certifications/training.pdf', name: 'technical-training.pdf', type: 'application/pdf' }],
     internal_notes: '',
   },
   {
