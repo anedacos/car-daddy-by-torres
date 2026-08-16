@@ -31,11 +31,27 @@ export function facebookGroupPriority(group = {}) {
 }
 
 export function facebookGroupEligible(group = {}) {
-  if (!group.active || group.membership_status !== 'member' || group.region_eligible === false) return false;
-  if (!allowedCategories.has(group.category)) return false;
+  return facebookGroupEligibilityReason(group) === 'eligible';
+}
+
+export function facebookGroupEligibilityReason(group = {}) {
+  if (!group.active) return 'inactive';
+  if (group.membership_status !== 'member') return 'membership_not_confirmed';
+  if (group.region_eligible === false) return 'outside_launch_region';
+  if (!allowedCategories.has(group.category)) return 'unsupported_category';
   const text = normalizeGroupName(`${group.name || ''} ${group.city_or_area || ''} ${group.state || ''}`);
-  if (excludedPattern.test(text) || contaminatedNamePattern.test(text)) return false;
-  return coreAreaPattern.test(text) || extendedAreaPattern.test(text);
+  if (contaminatedNamePattern.test(text)) return 'contaminated_name';
+  if (excludedPattern.test(text)) return 'excluded_topic';
+  if (!coreAreaPattern.test(text) && !extendedAreaPattern.test(text)) return 'outside_service_area';
+  return 'eligible';
+}
+
+export function summarizeFacebookGroupEligibility(groups = []) {
+  return groups.reduce((summary, group) => {
+    const reason = facebookGroupEligibilityReason(group);
+    summary[reason] = (summary[reason] || 0) + 1;
+    return summary;
+  }, {});
 }
 
 function queueEntry(group, language, lanePosition) {

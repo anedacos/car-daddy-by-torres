@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { buildFacebookGroupQueue } from '../src/social/facebook-group-queue.js';
+import { buildFacebookGroupQueue, summarizeFacebookGroupEligibility } from '../src/social/facebook-group-queue.js';
 
 const appData = process.env.APPDATA;
 if (!appData) throw new Error('APPDATA is unavailable.');
@@ -23,6 +23,7 @@ do {
 } while (cursor);
 
 const built = buildFacebookGroupQueue(groups);
+const eligibilitySummary = summarizeFacebookGroupEligibility(groups);
 const output = {
   schema: 'car-daddy-facebook-group-queue/v1',
   generated_at: new Date().toISOString(),
@@ -45,7 +46,8 @@ const output = {
     require_activation_confirmation: true,
   },
   summary: {
-    catalog_groups_read: groups.length,
+    regional_confirmed_memberships_read: groups.length,
+    eligibility: eligibilitySummary,
     english_queue: built.queues.en.length,
     spanish_queue: built.queues.es.length,
     total_prepared: built.executionOrder.length,
@@ -57,4 +59,3 @@ const output = {
 await mkdir('data', { recursive: true });
 await writeFile('data/facebook-group-queue.json', `${JSON.stringify(output, null, 2)}\n`, 'utf8');
 console.log(`Prepared ${output.summary.total_prepared} paused destinations: ${output.summary.english_queue} English, ${output.summary.spanish_queue} Spanish.`);
-

@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   buildFacebookGroupQueue,
   facebookGroupEligible,
+  facebookGroupEligibilityReason,
   facebookGroupLanguage,
   nextFacebookGroupDestination,
+  summarizeFacebookGroupEligibility,
 } from '../src/social/facebook-group-queue.js';
 
 const group = (overrides = {}) => ({
@@ -35,6 +37,17 @@ test('keeps local service groups and excludes unrelated rental groups', () => {
   assert.equal(facebookGroupEligible(group({ name: 'No leída Te damos la bienvenida a Gulfport Online' })), false);
   assert.equal(facebookGroupEligible(group({ name: 'Mississippi Cars', city_or_area: 'Statewide' })), false);
   assert.equal(facebookGroupEligible(group({ active: false })), false);
+});
+
+test('explains every group exclusion instead of presenting filtered counts as totals', () => {
+  assert.equal(facebookGroupEligibilityReason(group()), 'eligible');
+  assert.equal(facebookGroupEligibilityReason(group({ name: 'Gulfport Jobs and Hiring' })), 'excluded_topic');
+  assert.equal(facebookGroupEligibilityReason(group({ category: 'rentals', name: 'Gulfport Rentals' })), 'unsupported_category');
+  assert.equal(facebookGroupEligibilityReason(group({ name: 'Mississippi Cars', city_or_area: 'Statewide' })), 'outside_service_area');
+  assert.deepEqual(summarizeFacebookGroupEligibility([
+    group(),
+    group({ facebook_group_id: '2', name: 'Gulfport Jobs' }),
+  ]), { eligible: 1, excluded_topic: 1 });
 });
 
 test('deduplicates destinations and creates one global alternating order', () => {

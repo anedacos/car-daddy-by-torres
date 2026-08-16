@@ -20,6 +20,19 @@ Status: prepared and paused. No Facebook post has been created or queued for aut
 - A Facebook warning, login request, CAPTCHA, identity check, disabled composer, or uncertain submission must stop the future worker.
 - A group ID cannot appear twice in one generated queue. Publication history must be checked before any retry.
 
+## Understanding the counts
+
+The Facebook Group Join Assistant dashboard's **Total Groups** number is the complete processing inventory for the selected profile. It includes new groups that have not been visited, pending requests, groups requiring answers, skipped entries, failures, and groups where the profile is already a member. It is not the number of confirmed memberships or publishable destinations.
+
+The generated CarDaddy queue reports a narrower funnel:
+
+- `regional_confirmed_memberships_read`: confirmed memberships returned by the integration after its launch-region filter.
+- `eligibility`: the exact count accepted or excluded by topic, category, name quality, and CarDaddy service-area rules.
+- `english_queue` and `spanish_queue`: prepared destinations by posting language.
+- `total_prepared`: the combined paused publishing queue.
+
+Never describe one language queue or the filtered queue as the profile's total Facebook groups.
+
 ## Prepared content
 
 `data/facebook-post-templates.json` contains separate English and Spanish drafts and approved Car Daddy media paths. These drafts have not been posted.
