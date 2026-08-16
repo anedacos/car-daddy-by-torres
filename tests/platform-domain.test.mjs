@@ -1,12 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  citiesByState,
+  copyScheduleToDays,
+  digitsOnly,
   generateCaseNumber,
+  isValidEmail,
+  isValidUsPhone,
+  isValidZipCode,
   isQualifiedOpportunity,
   maskContact,
   rankCompatibleProviders,
   validateUpload,
 } from '../src/platform/domain.js';
+
+test('provider contact helpers accept only valid US contact values', () => {
+  assert.equal(digitsOnly('(228) ABC-1234', 10), '2281234');
+  assert.equal(digitsOnly('228555123499', 10), '2285551234');
+  assert.equal(isValidUsPhone('2285551234'), true);
+  assert.equal(isValidUsPhone('228555ABC4'), false);
+  assert.equal(isValidEmail('mechanic@example.com'), true);
+  assert.equal(isValidEmail('mechanic@example'), false);
+  assert.equal(isValidZipCode('39503'), true);
+  assert.equal(isValidZipCode('3950A'), false);
+  assert.equal(citiesByState.Mississippi.includes('Gulfport'), true);
+});
+
+test('a completed schedule can be copied to every selected day', () => {
+  const monday = [{ start: '08:00', end: '17:00' }, { start: '18:00', end: '20:00' }];
+  const schedule = copyScheduleToDays({ Monday: monday }, 'Monday', ['Monday', 'Tuesday', 'Wednesday']);
+  assert.deepEqual(schedule.Tuesday, monday);
+  assert.deepEqual(schedule.Wednesday, monday);
+  assert.notEqual(schedule.Tuesday, monday);
+  assert.notEqual(schedule.Tuesday[0], monday[0]);
+});
 
 test('case numbers are deterministic and contain the date', () => {
   assert.equal(generateCaseNumber(new Date('2026-08-03T12:00:00.000Z'), 0), 'CD-20260803-00000');

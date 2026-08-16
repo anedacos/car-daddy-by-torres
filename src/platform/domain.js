@@ -1,5 +1,24 @@
 export const launchStates = ['Mississippi', 'Louisiana', 'Alabama'];
 
+export const citiesByState = {
+  Mississippi: [
+    'Biloxi', 'Brandon', 'Clinton', 'Columbus', 'Gautier', 'Greenville', 'Greenwood', 'Gulfport',
+    'Hattiesburg', 'Horn Lake', 'Jackson', 'Laurel', 'Long Beach', 'Madison', 'Meridian',
+    'Moss Point', 'Ocean Springs', 'Olive Branch', 'Oxford', 'Pascagoula', 'Pearl',
+    'Ridgeland', 'Southaven', 'Starkville', 'Tupelo', 'Vicksburg',
+  ],
+  Louisiana: [
+    'Alexandria', 'Baton Rouge', 'Bossier City', 'Covington', 'Gonzales', 'Hammond', 'Harvey',
+    'Houma', 'Kenner', 'Lafayette', 'Lake Charles', 'Mandeville', 'Marrero', 'Metairie',
+    'Monroe', 'Natchitoches', 'New Iberia', 'New Orleans', 'Ruston', 'Shreveport', 'Slidell',
+  ],
+  Alabama: [
+    'Auburn', 'Bessemer', 'Birmingham', 'Daphne', 'Decatur', 'Dothan', 'Enterprise',
+    'Fairhope', 'Florence', 'Gadsden', 'Hoover', 'Huntsville', 'Madison', 'Mobile',
+    'Montgomery', 'Opelika', 'Phenix City', 'Prattville', 'Saraland', 'Tuscaloosa',
+  ],
+};
+
 export const providerStatuses = [
   'Draft',
   'Pending',
@@ -81,6 +100,36 @@ export const incidentTypes = [
 export const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 export const allowedVideoTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
 export const allowedDocumentTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+export function digitsOnly(value = '', maxLength = Number.POSITIVE_INFINITY) {
+  return String(value).replace(/\D/g, '').slice(0, maxLength);
+}
+
+export function isValidUsPhone(value = '') {
+  return /^[0-9]{10}$/.test(value);
+}
+
+export function isValidEmail(value = '') {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+export function isValidZipCode(value = '') {
+  return /^[0-9]{5}$/.test(value);
+}
+
+/**
+ * @param {Record<string, Array<{ start: string, end: string }>>} schedule
+ * @param {string} sourceDay
+ * @param {string[]} selectedDays
+ */
+export function copyScheduleToDays(schedule, sourceDay, selectedDays) {
+  const sourceRanges = schedule[sourceDay] || [{ start: '', end: '' }];
+  const next = { ...schedule };
+  selectedDays.forEach((day) => {
+    if (day !== sourceDay) next[day] = sourceRanges.map((range) => ({ ...range }));
+  });
+  return next;
+}
 
 /** @typedef {{ type: string, size: number, name?: string }} UploadCandidate */
 /** @typedef {Record<string, any>} PlatformRecord */

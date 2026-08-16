@@ -79,7 +79,7 @@ function ProviderReviews({ providers, reload }) {
         <thead><tr><th>Provider</th><th>Coverage</th><th>Services</th><th>Availability</th><th>Private evidence</th><th>Review</th></tr></thead>
         <tbody>{visible.map((provider) => <tr key={provider.id}>
           <td><strong>{provider.full_name}</strong><br />{provider.business_name}<br /><small>{provider.email}<br />{provider.phone}<br />Retain until: {provider.retention_until ? new Date(provider.retention_until).toLocaleDateString() : '90 days from submission'}</small></td>
-          <td>{provider.city}, {provider.state} {provider.zip_code}<br />{provider.max_travel_radius} miles<br />{provider.languages?.join(', ')}</td>
+          <td>{provider.city}, {provider.state} {provider.zip_code}<br />{provider.max_travel_radius} miles{provider.max_travel_hours ? ` / ${provider.max_travel_hours} hr one way` : ''}<br />{provider.languages?.join(', ')}</td>
           <td>{provider.specialties?.join(', ')}<br /><small>Not offered: {provider.services_not_offered?.join(', ') || 'None listed'}</small></td>
           <td>{provider.available_days?.join(', ') || 'Not listed'}<br /><small>{provider.emergency_available ? 'Emergency' : 'No emergency'} / {provider.all_day_available ? '24-hour days' : 'Set hours'}</small></td>
           <td><PrivateFiles manifest={[...(provider.media_manifest || []), ...(provider.certifications_manifest || []), ...(provider.commercial_insurance_manifest || [])]} /></td>

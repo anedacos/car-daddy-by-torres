@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  Copy,
   FileCheck2,
   LockKeyhole,
   Network,
@@ -17,7 +18,13 @@ import {
 } from 'lucide-react';
 import { business, languages } from '../data/content';
 import {
+  citiesByState,
+  copyScheduleToDays,
+  digitsOnly,
   incidentTypes,
+  isValidEmail,
+  isValidUsPhone,
+  isValidZipCode,
   launchStates,
   specialties,
 } from './domain';
@@ -184,6 +191,7 @@ function TimeSelect({ label, value, onChange, lang }) {
 }
 
 function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = false, error }) {
+  const [copiedFrom, setCopiedFrom] = useState('');
   const update = (day, range, key, value) => {
     const next = { ...schedule, [day]: [...(schedule[day] || [{ start: '', end: '' }])] };
     next[day][range] = { ...next[day][range], [key]: value };
@@ -191,15 +199,27 @@ function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = fals
   };
   const addRange = (day) => onChange({ ...schedule, [day]: [...(schedule[day] || [{ start: '', end: '' }]), { start: '', end: '' }] });
   const removeRange = (day, range) => onChange({ ...schedule, [day]: (schedule[day] || []).filter((_, index) => index !== range) });
+  const copyToSelectedDays = (sourceDay) => {
+    onChange(copyScheduleToDays(schedule, sourceDay, selectedDays));
+    setCopiedFrom(sourceDay);
+  };
   if (!selectedDays.length) return <p className="form-help full">{tx(lang, 'Select at least one available day.', 'Selecciona al menos un día disponible.')}</p>;
   return (
     <div className={`schedule-editor full ${invalid ? 'field-invalid' : ''}`} data-field="availability_schedule">
       <div className="schedule-heading">
-        <div><strong>{tx(lang, 'Working hours', 'Horario de trabajo')}</strong><small>{tx(lang, 'Choose a start and end time using a 12-hour clock.', 'Elige la hora de inicio y fin en formato de 12 horas.')}</small></div>
+        <div><strong>{tx(lang, 'Working hours', 'Horario de trabajo')}</strong><small>{tx(lang, 'Set one day, then copy that schedule to every other selected day.', 'Configura un día y luego copia ese horario a los demás días seleccionados.')}</small></div>
       </div>
       {selectedDays.map((day) => (
         <div className="schedule-row" key={day}>
-          <strong>{optionLabel(lang, day)}</strong>
+          <div className="schedule-day-heading">
+            <strong>{optionLabel(lang, day)}</strong>
+            {selectedDays.length > 1 ? <button
+              type="button"
+              className="copy-schedule"
+              disabled={!(schedule[day]?.[0]?.start && schedule[day]?.[0]?.end)}
+              onClick={() => copyToSelectedDays(day)}
+            ><Copy size={15} /> {tx(lang, 'Copy to selected days', 'Copiar a días seleccionados')}</button> : null}
+          </div>
           <div className="day-ranges">
             {(schedule[day]?.length ? schedule[day] : [{ start: '', end: '' }]).map((rangeValue, range) => (
               <div key={range} className="time-range">
@@ -212,6 +232,7 @@ function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = fals
           </div>
         </div>
       ))}
+      {copiedFrom ? <p className="schedule-copy-status" role="status"><Check size={15} /> {tx(lang, `${copiedFrom} schedule copied to the other selected days.`, `Horario de ${optionLabel(lang, copiedFrom)} copiado a los demás días seleccionados.`)}</p> : null}
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
     </div>
   );
@@ -262,7 +283,7 @@ async function readVideoDuration(file) {
 
 const initialProvider = {
   full_name: '', business_name: '', phone: '', email: '', state: 'Mississippi', city: '', zip_code: '',
-  max_travel_radius: 30, languages: ['English'], years_experience: '', specialties: [],
+  max_travel_radius: 30, max_travel_hours: '', languages: ['English'], years_experience: '', specialties: [],
   vehicle_types_served: [], vehicle_types_not_served: [], services_offered: [], services_not_offered: [],
   available_days: [], availability_schedule: {}, immediate_available: false, scheduled_available: true,
   availability_start_mode: 'Now', availability_start_date: '',
@@ -295,6 +316,19 @@ function ProviderApplicationPage({ lang, shell }) {
     setFieldErrors((current) => ({ ...current, [`work_sample_${index}`]: undefined }));
   };
 
+  const contactError = (key, value = form[key]) => {
+    if (!value) return tx(lang, 'This field is required.', 'Este campo es obligatorio.');
+    if (key === 'phone' && !isValidUsPhone(value)) return tx(lang, 'Enter a 10-digit phone number.', 'Ingresa un teléfono de 10 dígitos.');
+    if (key === 'email' && !isValidEmail(value)) return tx(lang, 'Enter a valid email address, such as name@example.com.', 'Ingresa un correo válido, por ejemplo nombre@ejemplo.com.');
+    if (key === 'zip_code' && !isValidZipCode(value)) return tx(lang, 'Enter a 5-digit ZIP code.', 'Ingresa un código postal de 5 dígitos.');
+    return '';
+  };
+
+  const validateContactField = (key) => {
+    const error = contactError(key);
+    setFieldErrors((current) => ({ ...current, [key]: error || undefined }));
+  };
+
   function showErrors(errors) {
     setFieldErrors(errors);
     setMessage(tx(lang, 'Check the fields marked in red before continuing.', 'Revisa los campos marcados en rojo antes de continuar.'));
@@ -313,8 +347,17 @@ function ProviderApplicationPage({ lang, shell }) {
     const errors = Object.fromEntries(required
       .filter((key) => Array.isArray(form[key]) ? !form[key].length : form[key] === '' || form[key] === null)
       .map((key) => [key, tx(lang, 'This field is required.', 'Este campo es obligatorio.')]));
+    if (step === 1) {
+      ['phone', 'email', 'zip_code'].forEach((key) => {
+        const error = contactError(key);
+        if (error) errors[key] = error;
+      });
+    }
     if (step === 3 && form.available_days.length && !form.all_day_available) {
-      const missingHours = form.available_days.some((day) => !form.availability_schedule[day]?.[0]?.start || !form.availability_schedule[day]?.[0]?.end);
+      const missingHours = form.available_days.some((day) => {
+        const ranges = form.availability_schedule[day] || [];
+        return !ranges.length || ranges.some((range) => !range.start || !range.end);
+      });
       if (missingHours) errors.availability_schedule = tx(lang, 'Add a start and end time for every selected day.', 'Agrega una hora de inicio y fin para cada día seleccionado.');
     }
     if (step === 3 && form.scheduled_available && form.availability_start_mode === 'Date' && !form.availability_start_date) {
@@ -395,13 +438,14 @@ function ProviderApplicationPage({ lang, shell }) {
         {step === 1 ? <div className="form-grid">
           <Field label={tx(lang, 'Full name', 'Nombre completo')} required fieldKey="full_name" invalid={Boolean(fieldErrors.full_name)} error={fieldErrors.full_name}><input value={form.full_name} onChange={(e) => set('full_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Business name, optional', 'Nombre comercial, opcional')}><input value={form.business_name} onChange={(e) => set('business_name', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Phone', 'Teléfono')} required fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Email', 'Correo')} required fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} /></Field>
-          <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select value={form.state} onChange={(e) => set('state', e.target.value)}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-          <Field label={tx(lang, 'City', 'Ciudad')} required fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input value={form.city} onChange={(e) => set('city', e.target.value)} /></Field>
-          <Field label={tx(lang, 'ZIP code', 'Código postal')} required fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" value={form.zip_code} onChange={(e) => set('zip_code', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Maximum travel radius (miles)', 'Radio máximo de viaje (millas)')} required fieldKey="max_travel_radius" invalid={Boolean(fieldErrors.max_travel_radius)} error={fieldErrors.max_travel_radius}><input type="number" min="1" max="300" value={form.max_travel_radius} onChange={(e) => set('max_travel_radius', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Years of experience', 'Años de experiencia')} required fieldKey="years_experience" invalid={Boolean(fieldErrors.years_experience)} error={fieldErrors.years_experience}><input type="number" min="0" max="80" value={form.years_experience} onChange={(e) => set('years_experience', e.target.value)} /></Field>
+          <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only.', '10 dígitos, solo números.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="tel" maxLength="10" value={form.phone} aria-invalid={Boolean(fieldErrors.phone)} onBlur={() => validateContactField('phone')} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
+          <Field label={tx(lang, 'Email', 'Correo')} required fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} aria-invalid={Boolean(fieldErrors.email)} onBlur={() => validateContactField('email')} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
+          <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select value={form.state} autoComplete="address-level1" onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
+          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="provider-city-options" autoComplete="address-level2" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="provider-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
+          <Field label={tx(lang, 'ZIP code', 'Código postal')} required hint={tx(lang, '5 digits, numbers only.', '5 dígitos, solo números.')} fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" maxLength="5" value={form.zip_code} aria-invalid={Boolean(fieldErrors.zip_code)} onBlur={() => validateContactField('zip_code')} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
+          <Field label={tx(lang, 'Maximum work radius (miles)', 'Radio máximo de trabajo (millas)')} required hint={tx(lang, 'Approximate distance you are willing to travel from your location to a mobile job.', 'Distancia aproximada que estás dispuesto a recorrer desde tu ubicación hasta un servicio móvil.')} fieldKey="max_travel_radius" invalid={Boolean(fieldErrors.max_travel_radius)} error={fieldErrors.max_travel_radius}><input type="number" inputMode="numeric" min="1" max="300" value={form.max_travel_radius} onChange={(e) => set('max_travel_radius', e.target.value)} /></Field>
+          <Field label={tx(lang, 'Maximum one-way travel time (optional)', 'Tiempo máximo de viaje de ida (opcional)')} hint={tx(lang, 'Choose how long you would drive from your location to a mobile job.', 'Elige cuánto tiempo conducirías desde tu ubicación hasta un servicio móvil.')}><select value={form.max_travel_hours} onChange={(e) => set('max_travel_hours', e.target.value)}><option value="">{tx(lang, 'Not specified', 'No especificado')}</option><option value="0.5">30 {tx(lang, 'minutes', 'minutos')}</option><option value="1">1 {tx(lang, 'hour', 'hora')}</option><option value="1.5">1.5 {tx(lang, 'hours', 'horas')}</option><option value="2">2 {tx(lang, 'hours', 'horas')}</option><option value="3">3 {tx(lang, 'hours', 'horas')}</option><option value="4">4 {tx(lang, 'hours', 'horas')}</option></select></Field>
+          <Field label={tx(lang, 'Years of experience (verifiable)', 'Años de experiencia (comprobables)')} required fieldKey="years_experience" invalid={Boolean(fieldErrors.years_experience)} error={fieldErrors.years_experience}><input type="number" inputMode="numeric" min="0" max="80" value={form.years_experience} onChange={(e) => set('years_experience', e.target.value)} /></Field>
           <CheckboxGroup lang={lang} label={tx(lang, 'Languages', 'Idiomas')} options={['English', 'Spanish']} values={form.languages} onChange={(value) => set('languages', value)} required fieldKey="languages" invalid={Boolean(fieldErrors.languages)} error={fieldErrors.languages} />
         </div> : null}
 
