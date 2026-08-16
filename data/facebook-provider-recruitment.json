@@ -1,0 +1,52 @@
+{
+  "schema": "car-daddy-facebook-provider-recruitment/v1",
+  "status": "prepared_not_approved",
+  "profile": {
+    "id": "fgja-2",
+    "name": "Car Daddy"
+  },
+  "campaign": {
+    "id": "provider_network_beta_es",
+    "language": "es",
+    "audience": "independent_automotive_providers",
+    "network_scope_not_company_service_list": true,
+    "group_post": {
+      "status": "prepared_paused",
+      "image": "/media/06_final_instagram/instagram_intro_square.jpg",
+      "text": "🔧 **CarDaddy está buscando mecánicos y profesionales automotrices independientes**\n\nEstamos formando una nueva red para conectar personas que necesitan asistencia automotriz con profesionales disponibles en su área.\n\nBuscamos experiencia en:\n\n🚗 Mecánica general\n⚡ Electricidad / electromecánica\n🚛 Diésel y gasolina\n❄️ Aire acondicionado\n🛞 Frenos y suspensión\n🔋 Baterías, alternadores y starters\n🆘 Asistencia en carretera\n🎨 Bodywork y pintura\n🔧 Diagnóstico y otras especialidades\n\n📍 Estamos comenzando en **Mississippi, Louisiana y Alabama**, con planes de expansión.\n\n¿Cómo funciona?\n\n✅ Tú eliges tus horarios.\n✅ Tú decides qué trabajos aceptar.\n✅ Tú estableces tus precios.\n✅ El cliente te paga directamente.\n✅ Debes tener experiencia, transporte y tus propias herramientas.\n✅ Puedes trabajar horarios normales, nocturnos o 24/7 según tu disponibilidad.\n✅ **Durante nuestra fase beta, participar es completamente GRATIS.**\n\nCarDaddy se encarga de recibir y filtrar solicitudes de clientes y conectarlas con profesionales disponibles según ubicación, especialidad y horario.\n\nNo somos una agencia de empleo. Formamos una red de proveedores automotrices independientes.\n\n📩 Si te interesa participar, envíanos por privado la palabra:\n\n**MECÁNICO**"
+    },
+    "private_message_flow": {
+      "enabled": false,
+      "dry_run": true,
+      "response_channel": "private_message",
+      "allowed_trigger_sources": [
+        "private_message",
+        "comment"
+      ],
+      "deduplicate_by_inbound_event": true,
+      "stop_on_opt_out": true,
+      "steps": [
+        {
+          "id": "mechanic_interest_es",
+          "match": "exact_normalized",
+          "keywords": [
+            "MECÁNICO",
+            "MECANICO"
+          ],
+          "status": "prepared_paused",
+          "reply": "¡Hola! 👋 Gracias por escribirnos y por tu interés en formar parte de la red CarDaddy.\n\nTe explico rápidamente cómo funciona:\n\nCarDaddy está creando una red de mecánicos y profesionales automotrices independientes. Nosotros recibimos solicitudes de clientes y buscamos proveedores compatibles según su ubicación, especialidad y disponibilidad.\n\n🔧 Tú decides qué trabajos aceptar.\n💵 Tú estableces tus propios precios.\n📅 Tú eliges tus horarios y disponibilidad.\n🚗 Necesitas contar con transporte y tus propias herramientas.\n💰 El cliente te paga directamente a ti.\n\nDurante nuestra **fase beta no cobramos membresía ni porcentaje por los trabajos**. La participación es gratuita mientras probamos y desarrollamos la plataforma.\n\nTambién tenemos una política importante para generar confianza con los clientes:\n\n**No se solicita ningún pago antes de que llegues físicamente al lugar del servicio.**\n\nPuedes acordar previamente con el cliente cuánto cuesta la inspección, pero el pago de esa inspección se realiza cuando hayas llegado, antes de comenzar el diagnóstico o trabajo.\n\nEl siguiente paso es completar nuestro formulario de registro, donde te pediremos información sobre:\n\n• Tu ubicación y área de cobertura.\n• Tus especialidades.\n• Horarios disponibles.\n• Idiomas que hablas.\n• Experiencia.\n• Fotografías de tus herramientas.\n• Evidencia básica de tus trabajos.\n\nUna vez enviado el formulario, recibirás un **correo electrónico de confirmación**. Es importante revisar también Spam/Correo no deseado y marcar los correos de CarDaddy como seguros, porque durante esta etapa utilizaremos principalmente el email para comunicarnos contigo y enviarte oportunidades.\n\nSi te interesa continuar, respóndeme:\n\n**QUIERO REGISTRARME**\n\ny te envío el enlace. 🔧"
+        },
+        {
+          "id": "provider_registration_link_es",
+          "match": "exact_normalized",
+          "keywords": [
+            "QUIERO REGISTRARME"
+          ],
+          "status": "draft_requires_approval",
+          "registration_url": "https://car-daddy-by-torres.pages.dev/es/unete-a-la-red?source=facebook&campaign=provider-network-beta",
+          "reply": "Perfecto. Completa tu solicitud para la red CarDaddy aquí:\n\nhttps://car-daddy-by-torres.pages.dev/es/unete-a-la-red?source=facebook&campaign=provider-network-beta\n\nAl enviarla recibirás un correo de confirmación. Revisa también Spam o Correo no deseado y marca los correos de CarDaddy como seguros para no perder futuras comunicaciones."
+        }
+      ]
+    }
+  }
+}

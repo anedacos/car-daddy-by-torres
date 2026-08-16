@@ -24,6 +24,14 @@ Status: prepared and paused. No Facebook post has been created or queued for aut
 
 `data/facebook-post-templates.json` contains separate English and Spanish drafts and approved Car Daddy media paths. These drafts have not been posted.
 
+The provider-network beta campaign is isolated in `data/facebook-provider-recruitment.json`. It contains:
+
+- The Spanish group post inviting independent automotive providers to send `MECÁNICO` privately.
+- The private response explaining the beta, direct payment, no advance payment before arrival, evidence requirements, and email confirmation.
+- A draft response to `QUIERO REGISTRARME` with the production application link.
+
+The message flow accepts `MECÁNICO` with or without the accent and only as an exact normalized response. It deduplicates inbound event IDs, honors opt-out words, and never sends from unsupported sources. Both the campaign and each message require explicit approval; the automation remains disabled and in dry-run mode.
+
 ## Refreshing the paused queue
 
 Run the Facebook Group Join Assistant, confirm that the `Car Daddy` profile catalog is current, then run:
@@ -43,3 +51,4 @@ Activation is a later task. Before enabling any worker:
 3. Confirm the Facebook profile session and posting window.
 4. Keep the worker disabled until the owner explicitly authorizes the first live post.
 
+Private-message activation is also a later task. It requires a supported Meta integration, approval of both message steps, and explicit owner authorization. No browser automation, group publication, or private reply is currently running.
