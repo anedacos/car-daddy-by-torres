@@ -24,6 +24,15 @@ test('customer intake collects only the service area before provider assignment'
   assert.doesNotMatch(source, /fieldKey="street_address"/);
 });
 
+test('mobile city entry uses compact in-flow suggestions instead of a native datalist', async () => {
+  const source = await readFile(pagesPath, 'utf8');
+
+  assert.match(source, /function CityAutocompleteField/);
+  assert.match(source, /city-suggestions/);
+  assert.doesNotMatch(source, /<datalist/);
+  assert.doesNotMatch(source, /list="(?:provider|service)-city-options"/);
+});
+
 test('database queues idempotent verification emails without paid channels', async () => {
   const migration = await readFile(migrationPath, 'utf8');
 

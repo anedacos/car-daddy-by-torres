@@ -19,9 +19,9 @@ import {
 } from 'lucide-react';
 import { business, languages } from '../data/content';
 import {
-  citiesByState,
   copyScheduleToDays,
   digitsOnly,
+  getCitySuggestions,
   incidentTypes,
   isValidEmail,
   isValidUsPhone,
@@ -85,6 +85,56 @@ function Field({ label, children, required, hint, fieldKey, invalid = false, err
       {hint ? <small>{hint}</small> : null}
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
     </label>
+  );
+}
+
+function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid = false, error }) {
+  const [focused, setFocused] = useState(false);
+  const inputId = React.useId();
+  const listId = `${inputId}-suggestions`;
+  const suggestions = getCitySuggestions(state, value);
+  const showSuggestions = focused && suggestions.length > 0;
+
+  function selectCity(city) {
+    onChange(city);
+    setFocused(false);
+  }
+
+  return (
+    <div className={`field city-field ${invalid ? 'field-invalid' : ''}`} data-field={fieldKey}>
+      <label htmlFor={inputId}>{tx(lang, 'City', 'Ciudad')} <b>*</b></label>
+      <div className="city-autocomplete">
+        <input
+          id={inputId}
+          type="text"
+          role="combobox"
+          autoComplete="address-level2"
+          aria-autocomplete="list"
+          aria-controls={showSuggestions ? listId : undefined}
+          aria-expanded={showSuggestions}
+          aria-invalid={invalid}
+          value={value}
+          onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+          onChange={(event) => { onChange(event.target.value); setFocused(true); }}
+          onFocus={(event) => {
+            setFocused(true);
+            window.setTimeout(() => event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setFocused(false);
+            if (event.key === 'Enter' && showSuggestions) {
+              event.preventDefault();
+              selectCity(suggestions[0]);
+            }
+          }}
+        />
+        {showSuggestions ? <div className="city-suggestions" id={listId} role="listbox" aria-label={tx(lang, 'City suggestions', 'Sugerencias de ciudades')}>
+          {suggestions.map((city) => <button key={city} type="button" role="option" aria-selected="false" onPointerDown={(event) => { event.preventDefault(); selectCity(city); }} onClick={() => selectCity(city)}>{city}</button>)}
+        </div> : null}
+      </div>
+      <small>{tx(lang, 'Type to see up to four matching cities.', 'Escribe para ver hasta cuatro ciudades coincidentes.')}</small>
+      {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
+    </div>
   );
 }
 
@@ -668,7 +718,7 @@ function ProviderApplicationPage({ lang, shell }) {
           <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only.', '10 dígitos, solo números.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="tel" maxLength="10" value={form.phone} aria-invalid={Boolean(fieldErrors.phone)} onBlur={() => validateContactField('phone')} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
           <Field label={tx(lang, 'Email', 'Correo')} required fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} aria-invalid={Boolean(fieldErrors.email)} onBlur={() => validateContactField('email')} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
           <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select value={form.state} autoComplete="address-level1" onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="provider-city-options" autoComplete="address-level2" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="provider-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
+          <CityAutocompleteField lang={lang} state={form.state} value={form.city} onChange={(value) => set('city', value)} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city} />
           <Field label={tx(lang, 'ZIP code', 'Código postal')} required hint={tx(lang, '5 digits, numbers only.', '5 dígitos, solo números.')} fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" maxLength="5" value={form.zip_code} aria-invalid={Boolean(fieldErrors.zip_code)} onBlur={() => validateContactField('zip_code')} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
           <Field label={tx(lang, 'Maximum work radius (miles)', 'Radio máximo de trabajo (millas)')} required hint={tx(lang, 'Approximate distance you are willing to travel from your location to a mobile job.', 'Distancia aproximada que estás dispuesto a recorrer desde tu ubicación hasta un servicio móvil.')} fieldKey="max_travel_radius" invalid={Boolean(fieldErrors.max_travel_radius)} error={fieldErrors.max_travel_radius}><input type="number" inputMode="numeric" min="1" max="300" value={form.max_travel_radius} onChange={(e) => set('max_travel_radius', e.target.value)} /></Field>
           <Field label={tx(lang, 'Maximum one-way travel time (optional)', 'Tiempo máximo de viaje de ida (opcional)')} hint={tx(lang, 'Choose how long you would drive from your location to a mobile job.', 'Elige cuánto tiempo conducirías desde tu ubicación hasta un servicio móvil.')}><select value={form.max_travel_hours} onChange={(e) => set('max_travel_hours', e.target.value)}><option value="">{tx(lang, 'Not specified', 'No especificado')}</option><option value="0.5">30 {tx(lang, 'minutes', 'minutos')}</option><option value="1">1 {tx(lang, 'hour', 'hora')}</option><option value="1.5">1.5 {tx(lang, 'hours', 'horas')}</option><option value="2">2 {tx(lang, 'hours', 'horas')}</option><option value="3">3 {tx(lang, 'hours', 'horas')}</option><option value="4">4 {tx(lang, 'hours', 'horas')}</option></select></Field>
@@ -890,7 +940,7 @@ function ServiceRequestPage({ lang, shell }) {
           <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only. Used only when a provider has accepted.', '10 dígitos, solo números. Se usa únicamente cuando un proveedor haya aceptado.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" maxLength="10" value={form.phone} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
           <Field label={tx(lang, 'Email', 'Correo')} required hint={tx(lang, 'Required for verification and all beta communications.', 'Obligatorio para verificación y todas las comunicaciones de la beta.')} fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
           <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select autoComplete="address-level1" value={form.state} onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="service-city-options" autoComplete="address-level2" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="service-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
+          <CityAutocompleteField lang={lang} state={form.state} value={form.city} onChange={(value) => set('city', value)} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city} />
           <Field label={tx(lang, 'ZIP code', 'Código postal')} required hint={tx(lang, '5 digits, numbers only.', '5 dígitos, solo números.')} fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" maxLength="5" value={form.zip_code} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
           <p className="address-coordination-note full"><LockKeyhole size={16} /><span>{tx(lang, 'For privacy, you do not need to enter the street address here. You will coordinate the exact service location directly with the assigned mechanic after contact is established.', 'Por privacidad, no necesitas ingresar la calle o dirección exacta aquí. Coordinarás la ubicación exacta del servicio directamente con el mecánico asignado cuando se pongan en contacto.')}</span></p>
         </div> : null}

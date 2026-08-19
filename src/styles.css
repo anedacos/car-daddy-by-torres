@@ -2189,6 +2189,7 @@ h3 {
 }
 
 .field span,
+.field > label,
 .checkbox {
   color: #27313a;
   font-size: 14px;
@@ -2217,6 +2218,48 @@ h3 {
 .field textarea {
   min-height: 116px;
   resize: vertical;
+}
+
+.city-autocomplete {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.city-suggestions {
+  background: #fff;
+  border: 1px solid #cbd5db;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(20, 27, 33, 0.09);
+  display: grid;
+  max-height: 184px;
+  overflow-y: auto;
+  position: static;
+  width: 100%;
+}
+
+.city-suggestions button {
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #e4e9ec;
+  color: #20272d;
+  cursor: pointer;
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.city-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.city-suggestions button:hover,
+.city-suggestions button:focus-visible {
+  background: #fff7dc;
+  outline: 2px solid #e9ae18;
+  outline-offset: -2px;
 }
 
 .full {
@@ -2546,6 +2589,10 @@ td {
 
   .hero-content {
     padding-top: 120px;
+  }
+
+  .city-suggestions {
+    max-height: 142px;
   }
 
   .service-grid,

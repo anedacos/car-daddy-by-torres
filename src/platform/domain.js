@@ -118,6 +118,27 @@ export function isValidZipCode(value = '') {
   return /^[0-9]{5}$/.test(value);
 }
 
+/** @param {string} state @param {string} query @param {number} limit */
+export function getCitySuggestions(state, query = '', limit = 4) {
+  /** @param {string} value */
+  const normalize = (value) => String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const normalizedQuery = normalize(query.trim());
+  if (!normalizedQuery) return [];
+  const stateCities = /** @type {Record<string, string[]>} */ (citiesByState)[state] || [];
+  return stateCities
+    .filter((city) => normalize(city).includes(normalizedQuery) && normalize(city) !== normalizedQuery)
+    .sort((a, b) => {
+      const aStarts = normalize(a).startsWith(normalizedQuery);
+      const bStarts = normalize(b).startsWith(normalizedQuery);
+      if (aStarts !== bStarts) return aStarts ? -1 : 1;
+      return a.localeCompare(b);
+    })
+    .slice(0, limit);
+}
+
 /**
  * @param {Record<string, Array<{ start: string, end: string }>>} schedule
  * @param {string} sourceDay

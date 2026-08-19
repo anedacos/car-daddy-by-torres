@@ -5,6 +5,7 @@ import {
   copyScheduleToDays,
   digitsOnly,
   generateCaseNumber,
+  getCitySuggestions,
   isValidEmail,
   isValidUsPhone,
   isValidZipCode,
@@ -24,6 +25,13 @@ test('provider contact helpers accept only valid US contact values', () => {
   assert.equal(isValidZipCode('39503'), true);
   assert.equal(isValidZipCode('3950A'), false);
   assert.equal(citiesByState.Mississippi.includes('Gulfport'), true);
+});
+
+test('city suggestions stay short and filter within the selected state', () => {
+  assert.deepEqual(getCitySuggestions('Mississippi', 'Gu'), ['Gulfport']);
+  assert.equal(getCitySuggestions('Mississippi', 'G').length, 4);
+  assert.equal(getCitySuggestions('Louisiana', 'Gu').length, 0);
+  assert.deepEqual(getCitySuggestions('Mississippi', ''), []);
 });
 
 test('a completed schedule can be copied to every selected day', () => {
