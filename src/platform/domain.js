@@ -118,6 +118,14 @@ export function isValidZipCode(value = '') {
   return /^[0-9]{5}$/.test(value);
 }
 
+export function isValidServiceStreetAddress(value = '') {
+  const address = String(value).trim();
+  return address.length >= 5
+    && /[0-9]/.test(address)
+    && /[A-Za-z]/.test(address)
+    && !/\bP\.?\s*O\.?\s+Box\b/i.test(address);
+}
+
 /**
  * @param {Record<string, Array<{ start: string, end: string }>>} schedule
  * @param {string} sourceDay

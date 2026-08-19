@@ -24,6 +24,7 @@ import {
   digitsOnly,
   incidentTypes,
   isValidEmail,
+  isValidServiceStreetAddress,
   isValidUsPhone,
   isValidZipCode,
   launchStates,
@@ -77,9 +78,9 @@ function optionLabel(lang, value) {
   return lang === 'es' ? spanishOptions[value] || value : value;
 }
 
-function Field({ label, children, required, hint, fieldKey, invalid = false, error }) {
+function Field({ label, children, required, hint, fieldKey, invalid = false, error, className = '' }) {
   return (
-    <label className={`field ${invalid ? 'field-invalid' : ''}`} data-field={fieldKey}>
+    <label className={`field ${className} ${invalid ? 'field-invalid' : ''}`.trim()} data-field={fieldKey}>
       <span>{label} {required ? <b>*</b> : null}</span>
       {children}
       {hint ? <small>{hint}</small> : null}
@@ -767,7 +768,7 @@ function ProviderApplicationPage({ lang, shell }) {
 }
 
 const initialCase = {
-  customer_name: '', phone: '', email: '', state: 'Mississippi', city: '', zip_code: '', approximate_location: '',
+  customer_name: '', phone: '', email: '', street_address: '', city: '', state: 'Mississippi', zip_code: '',
   vehicle_year: '', vehicle_make: '', vehicle_model: '', vin: '', vehicle_type: 'Car', fuel_type: 'Gasoline',
   problem_description: '', vehicle_starts: 'Unknown', vehicle_moves: 'Unknown', service_requested: 'Diagnostics',
   specialty_needed: 'General automotive mechanics', urgency: 'Immediate', preferred_date: '', preferred_time: '',
@@ -811,11 +812,12 @@ function ServiceRequestPage({ lang, shell }) {
 
   function next() {
     const requiredKeys = step === 1
-      ? ['customer_name', 'phone', 'email', 'state', 'city', 'zip_code', 'approximate_location']
+      ? ['customer_name', 'phone', 'email', 'street_address', 'city', 'state', 'zip_code']
       : ['vehicle_year', 'vehicle_make', 'vehicle_model', 'problem_description'];
     const errors = Object.fromEntries(requiredKeys.filter((key) => !form[key]).map((key) => [key, tx(lang, 'This field is required.', 'Este campo es obligatorio.')]));
     if (step === 1 && form.phone && !isValidUsPhone(form.phone)) errors.phone = tx(lang, 'Enter a 10-digit phone number.', 'Ingresa un teléfono de 10 dígitos.');
     if (step === 1 && form.email && !isValidEmail(form.email)) errors.email = tx(lang, 'Enter a valid email address, such as name@example.com.', 'Ingresa un correo válido, por ejemplo nombre@ejemplo.com.');
+    if (step === 1 && form.street_address && !isValidServiceStreetAddress(form.street_address)) errors.street_address = tx(lang, 'Enter the complete physical street address, including the street number. P.O. boxes are not service locations.', 'Ingresa la dirección física completa, incluido el número de la calle. Los apartados postales no son ubicaciones de servicio.');
     if (step === 1 && form.zip_code && !isValidZipCode(form.zip_code)) errors.zip_code = tx(lang, 'Enter a 5-digit ZIP code.', 'Ingresa un código postal de 5 dígitos.');
     if (Object.keys(errors).length) {
       showCaseErrors(errors);
@@ -889,10 +891,10 @@ function ServiceRequestPage({ lang, shell }) {
           <Field label={tx(lang, 'Name', 'Nombre')} required fieldKey="customer_name" invalid={Boolean(fieldErrors.customer_name)} error={fieldErrors.customer_name}><input value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only. Used only when a provider has accepted.', '10 dígitos, solo números. Se usa únicamente cuando un proveedor haya aceptado.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" maxLength="10" value={form.phone} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
           <Field label={tx(lang, 'Email', 'Correo')} required hint={tx(lang, 'Required for verification and all beta communications.', 'Obligatorio para verificación y todas las comunicaciones de la beta.')} fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
-          <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select value={form.state} onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
-          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="service-city-options" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="service-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
-          <Field label={tx(lang, 'ZIP code', 'Código postal')} required fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" maxLength="5" value={form.zip_code} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
-          <Field label={tx(lang, 'Address or approximate location', 'Dirección o ubicación aproximada')} required fieldKey="approximate_location" invalid={Boolean(fieldErrors.approximate_location)} error={fieldErrors.approximate_location}><textarea value={form.approximate_location} onChange={(e) => set('approximate_location', e.target.value)} /></Field>
+          <Field className="full" label={tx(lang, 'Exact service street address', 'Dirección exacta del servicio')} required hint={tx(lang, 'Enter the complete physical address where the vehicle is located, including the street number. Do not enter a landmark or approximate area.', 'Ingresa la dirección física completa donde se encuentra el vehículo, incluido el número de la calle. No ingreses un punto de referencia ni un área aproximada.')} fieldKey="street_address" invalid={Boolean(fieldErrors.street_address)} error={fieldErrors.street_address}><input autoComplete="street-address" value={form.street_address} onChange={(e) => set('street_address', e.target.value)} /></Field>
+          <Field label={tx(lang, 'City', 'Ciudad')} required hint={tx(lang, 'Start typing to see suggestions.', 'Empieza a escribir para ver sugerencias.')} fieldKey="city" invalid={Boolean(fieldErrors.city)} error={fieldErrors.city}><input list="service-city-options" autoComplete="address-level2" value={form.city} onChange={(e) => set('city', e.target.value)} /><datalist id="service-city-options">{(citiesByState[form.state] || []).map((city) => <option value={city} key={city} />)}</datalist></Field>
+          <Field label={tx(lang, 'State', 'Estado')} required fieldKey="state" invalid={Boolean(fieldErrors.state)} error={fieldErrors.state}><select autoComplete="address-level1" value={form.state} onChange={(e) => { set('state', e.target.value); set('city', ''); }}>{launchStates.map((state) => <option key={state}>{state}</option>)}</select></Field>
+          <Field label={tx(lang, 'ZIP code', 'Código postal')} required hint={tx(lang, '5 digits, numbers only.', '5 dígitos, solo números.')} fieldKey="zip_code" invalid={Boolean(fieldErrors.zip_code)} error={fieldErrors.zip_code}><input inputMode="numeric" pattern="[0-9]*" autoComplete="postal-code" maxLength="5" value={form.zip_code} onChange={(e) => set('zip_code', digitsOnly(e.target.value, 5))} /></Field>
         </div> : null}
 
         {step === 2 ? <div className="form-grid">

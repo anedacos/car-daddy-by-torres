@@ -9,7 +9,7 @@ import {
   updateLocalRecord,
   updateRecord,
 } from '../lib/storage';
-import { createCaseEvent, generateCaseNumber, validateUpload } from './domain';
+import { createCaseEvent, generateCaseNumber, isValidServiceStreetAddress, validateUpload } from './domain';
 import { mockCases, mockComplaints, mockProviderProfiles, mockProviders } from './fixtures';
 import { emailNotificationProvider } from './notifications';
 
@@ -84,19 +84,26 @@ export async function submitProviderApplication(payload) {
 }
 
 export async function submitServiceCase(payload) {
+  const streetAddress = String(payload.street_address || payload.approximate_location || '').trim();
+  if (!isValidServiceStreetAddress(streetAddress)) throw new Error('A complete physical service address is required.');
+  const normalizedPayload = {
+    ...payload,
+    street_address: streetAddress,
+    approximate_location: streetAddress,
+  };
   if (isPlatformMockMode) {
     const record = await platformInsert('service_cases', {
-      ...payload,
+      ...normalizedPayload,
       case_number: generateCaseNumber(),
       email_verification_status: 'Pending',
       status: 'Request received',
       assigned_provider_id: null,
     });
     await platformInsert('case_events', createCaseEvent(record.id, 'request_received', 'Public request submitted.'));
-    await platformInsert('email_outbox', emailNotificationProvider.createQueueRecord({ recipientEmail: payload.email, templateKey: 'request_received', caseId: record.id, payload: { case_number: record.case_number } }));
+    await platformInsert('email_outbox', emailNotificationProvider.createQueueRecord({ recipientEmail: normalizedPayload.email, templateKey: 'request_received', caseId: record.id, payload: { case_number: record.case_number } }));
     return { ...record, email_notification_status: 'Pending' };
   }
-  const { data, error } = await supabase.rpc('submit_service_case', { p_payload: payload });
+  const { data, error } = await supabase.rpc('submit_service_case', { p_payload: normalizedPayload });
   if (error) throw error;
   return data;
 }

@@ -6,6 +6,7 @@ import {
   digitsOnly,
   generateCaseNumber,
   isValidEmail,
+  isValidServiceStreetAddress,
   isValidUsPhone,
   isValidZipCode,
   isQualifiedOpportunity,
@@ -23,6 +24,9 @@ test('provider contact helpers accept only valid US contact values', () => {
   assert.equal(isValidEmail('mechanic@example'), false);
   assert.equal(isValidZipCode('39503'), true);
   assert.equal(isValidZipCode('3950A'), false);
+  assert.equal(isValidServiceStreetAddress('14035 Airport Road'), true);
+  assert.equal(isValidServiceStreetAddress('Near the gas station'), false);
+  assert.equal(isValidServiceStreetAddress('P.O. Box 123'), false);
   assert.equal(citiesByState.Mississippi.includes('Gulfport'), true);
 });
 
