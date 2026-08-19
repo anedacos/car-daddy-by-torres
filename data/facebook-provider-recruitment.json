@@ -8,8 +8,51 @@
   "campaign": {
     "id": "provider_network_beta_es",
     "language": "es",
+    "supported_languages": [
+      "es",
+      "en"
+    ],
+    "language_categories": {
+      "es": {
+        "label": "Spanish",
+        "group_queue": "provider_recruitment_es",
+        "interest_keywords": [
+          "MECÁNICO",
+          "MECANICO"
+        ],
+        "registration_keywords": [
+          "QUIERO REGISTRARME"
+        ]
+      },
+      "en": {
+        "label": "English",
+        "group_queue": "provider_recruitment_en",
+        "interest_keywords": [
+          "MECHANIC",
+          "MECHANICS"
+        ],
+        "registration_keywords": [
+          "I WANT TO REGISTER",
+          "I WANT TO JOIN"
+        ]
+      }
+    },
     "audience": "independent_automotive_providers",
     "network_scope_not_company_service_list": true,
+    "localized_group_posts": {
+      "es": {
+        "status": "prepared_paused",
+        "queue": "provider_recruitment_es",
+        "image": "/media/06_final_instagram/instagram_intro_square.jpg",
+        "text": "🔧 **CarDaddy está buscando mecánicos y profesionales automotrices independientes**\n\nEstamos formando una nueva red para conectar personas que necesitan asistencia automotriz con profesionales disponibles en su área.\n\nBuscamos experiencia en:\n\n🚗 Mecánica general\n⚡ Electricidad / electromecánica\n🚛 Diésel y gasolina\n❄️ Aire acondicionado\n🛞 Frenos y suspensión\n🔋 Baterías, alternadores y starters\n🆘 Asistencia en carretera\n🎨 Bodywork y pintura\n🔧 Diagnóstico y otras especialidades\n\n📍 Estamos comenzando en **Mississippi, Louisiana y Alabama**, con planes de expansión.\n\n¿Cómo funciona?\n\n✅ Tú eliges tus horarios.\n✅ Tú decides qué trabajos aceptar.\n✅ Tú estableces tus precios.\n✅ El cliente te paga directamente.\n✅ Debes tener experiencia, transporte y tus propias herramientas.\n✅ Puedes trabajar horarios normales, nocturnos o 24/7 según tu disponibilidad.\n✅ **Durante nuestra fase beta, participar es completamente GRATIS.**\n\nCarDaddy se encarga de recibir y filtrar solicitudes de clientes y conectarlas con profesionales disponibles según ubicación, especialidad y horario.\n\nNo somos una agencia de empleo. Formamos una red de proveedores automotrices independientes.\n\n📩 Si te interesa participar, envíanos por privado la palabra:\n\n**MECÁNICO**"
+      },
+      "en": {
+        "status": "prepared_paused",
+        "queue": "provider_recruitment_en",
+        "image": "/media/06_final_instagram/instagram_intro_square.jpg",
+        "text": "🔧 **CarDaddy is looking for independent mechanics and automotive professionals**\n\nWe are building a new network to connect people who need automotive assistance with professionals available in their area.\n\nWe are looking for experience in:\n\n🚗 General automotive mechanics\n⚡ Electrical and electromechanical work\n🚛 Diesel and gasoline engines\n❄️ Air conditioning\n🛞 Brakes and suspension\n🔋 Batteries, alternators, and starters\n🆘 Roadside assistance\n🎨 Bodywork and paint\n🔧 Diagnostics and other specialties\n\n📍 We are starting in **Mississippi, Louisiana, and Alabama**, with plans to expand.\n\nHow does it work?\n\n✅ You choose your schedule.\n✅ You decide which jobs to accept.\n✅ You set your own prices.\n✅ The customer pays you directly.\n✅ You must have experience, transportation, and your own tools.\n✅ You may work regular hours, nights, or 24/7 according to your availability.\n✅ **Participation is completely FREE during our beta phase.**\n\nCarDaddy receives and screens customer requests, then connects them with available professionals according to location, specialty, and schedule.\n\nWe are not an employment agency. We are building a network of independent automotive providers.\n\n📩 If you are interested, send us this word in a private message:\n\n**MECHANIC**"
+      }
+    },
     "group_post": {
       "status": "prepared_paused",
       "image": "/media/06_final_instagram/instagram_intro_square.jpg",
@@ -34,6 +77,8 @@
             "MECANICO"
           ],
           "status": "prepared_paused",
+          "language_category": "es",
+          "meta_business_suite_reply": "¡Hola! Gracias por tu interés en la red CarDaddy. Conectamos clientes con mecánicos y profesionales automotrices independientes según ubicación, especialidad y horario. Tú eliges trabajos, precios y disponibilidad; el cliente te paga directamente. La fase beta es gratis. Debes tener experiencia comprobable, transporte, herramientas y evidencia en video. No se cobra al cliente antes de que llegues al servicio; la inspección acordada se paga al llegar. Responde QUIERO REGISTRARME.",
           "reply": "¡Hola! 👋 Gracias por escribirnos y por tu interés en formar parte de la red CarDaddy.\n\nTe explico rápidamente cómo funciona:\n\nCarDaddy está creando una red de mecánicos y profesionales automotrices independientes. Nosotros recibimos solicitudes de clientes y buscamos proveedores compatibles según su ubicación, especialidad y disponibilidad.\n\n🔧 Tú decides qué trabajos aceptar.\n💵 Tú estableces tus propios precios.\n📅 Tú eliges tus horarios y disponibilidad.\n🚗 Necesitas contar con transporte y tus propias herramientas.\n💰 El cliente te paga directamente a ti.\n\nDurante nuestra **fase beta no cobramos membresía ni porcentaje por los trabajos**. La participación es gratuita mientras probamos y desarrollamos la plataforma.\n\nTambién tenemos una política importante para generar confianza con los clientes:\n\n**No se solicita ningún pago antes de que llegues físicamente al lugar del servicio.**\n\nPuedes acordar previamente con el cliente cuánto cuesta la inspección, pero el pago de esa inspección se realiza cuando hayas llegado, antes de comenzar el diagnóstico o trabajo.\n\nEl siguiente paso es completar nuestro formulario de registro, donde te pediremos información sobre:\n\n• Tu ubicación y área de cobertura.\n• Tus especialidades.\n• Horarios disponibles.\n• Idiomas que hablas.\n• Experiencia.\n• Fotografías de las herramientas que posees y utilizas.\n• Por cada especialidad declarada, mínimo un video obligatorio de un trabajo realizado por ti, explicando qué hiciste.\n• De forma opcional, fotografías del trabajo y certificados relacionados con cada especialidad.\n\nUna vez enviado el formulario, recibirás un **correo electrónico de confirmación**. Es importante revisar también Spam/Correo no deseado y marcar los correos de CarDaddy como seguros, porque durante esta etapa utilizaremos principalmente el email para comunicarnos contigo y enviarte oportunidades.\n\nSi te interesa continuar, respóndeme:\n\n**QUIERO REGISTRARME**\n\ny te envío el enlace. 🔧"
         },
         {
@@ -43,8 +88,33 @@
             "QUIERO REGISTRARME"
           ],
           "status": "draft_requires_approval",
+          "language_category": "es",
           "registration_url": "https://car-daddy-by-torres.pages.dev/es/unete-a-la-red?source=facebook&campaign=provider-network-beta",
           "reply": "Perfecto. Completa tu solicitud para la red CarDaddy aquí:\n\nhttps://car-daddy-by-torres.pages.dev/es/unete-a-la-red?source=facebook&campaign=provider-network-beta\n\nAl enviarla recibirás un correo de confirmación. Revisa también Spam o Correo no deseado y marca los correos de CarDaddy como seguros para no perder futuras comunicaciones."
+        },
+        {
+          "id": "mechanic_interest_en",
+          "match": "exact_normalized",
+          "keywords": [
+            "MECHANIC",
+            "MECHANICS"
+          ],
+          "status": "prepared_paused",
+          "language_category": "en",
+          "meta_business_suite_reply": "Hi! Thanks for your interest in the CarDaddy network. We connect customers with independent automotive professionals based on location, specialty, and availability. You choose the jobs, prices, and schedule; the customer pays you directly. The beta is free. You need verifiable experience, transportation, tools, and video evidence. Customers are not charged before you arrive; the agreed inspection fee is paid upon arrival. Reply I WANT TO REGISTER.",
+          "reply": "Hi! Thanks for contacting us and for your interest in joining the CarDaddy network.\n\nCarDaddy is building a network of independent mechanics and automotive professionals. We receive customer requests and look for compatible providers according to their location, specialty, and availability.\n\nYou decide which jobs to accept, set your own prices, and choose your schedule. The customer pays you directly. During our beta phase, we do not charge membership fees or take a percentage of your jobs.\n\nTo build trust with customers, no payment may be requested before you physically arrive at the service location. You may agree on the inspection price in advance, but it is paid when you arrive and before you begin the diagnosis or work.\n\nThe application requests your location, coverage area, specialties, availability, languages, experience, photos of your own tools, and at least one required video for every specialty you claim. Work photos and related certificates are optional.\n\nAfter submitting, you will receive a confirmation email. Check Spam or Junk and mark CarDaddy emails as safe so you do not miss future communications.\n\nTo continue, reply:\n\nI WANT TO REGISTER"
+        },
+        {
+          "id": "provider_registration_link_en",
+          "match": "exact_normalized",
+          "keywords": [
+            "I WANT TO REGISTER",
+            "I WANT TO JOIN"
+          ],
+          "status": "draft_requires_approval",
+          "language_category": "en",
+          "registration_url": "https://car-daddy-by-torres.pages.dev/unete-a-la-red?source=facebook&campaign=provider-network-beta-en",
+          "reply": "Great. Complete your CarDaddy network application here:\n\nhttps://car-daddy-by-torres.pages.dev/unete-a-la-red?source=facebook&campaign=provider-network-beta-en\n\nAfter submitting it, you will receive a confirmation email. Check Spam or Junk and mark CarDaddy emails as safe so you do not miss future communications."
         }
       ]
     }

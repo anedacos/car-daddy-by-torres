@@ -217,6 +217,18 @@ No payment processing is included.
 - Operational provider and case uploads use private Supabase Storage buckets when configured; mock mode stores only synthetic file metadata locally.
 - Automatic email/SMS sending is not included.
 
+## Facebook Messenger Automation
+
+The repository includes an intent-based Messenger webhook at:
+
+```text
+/api/facebook-webhook
+```
+
+It recognizes natural-language customer requests, service-area questions, independent-provider interest, general questions, Spanish messages, and unclear messages. Classification is deterministic and free; no paid AI API is required. Meta Business Suite owns the short first-message welcome, while the webhook sends the intent-specific follow-up.
+
+Production requires server-side Cloudflare Pages secrets named `FACEBOOK_VERIFY_TOKEN`, `FACEBOOK_PAGE_ACCESS_TOKEN`, and `FACEBOOK_APP_SECRET`. Optional Cloudflare KV binding `FACEBOOK_MESSAGE_EVENTS` deduplicates Meta webhook retries. Full setup and test instructions are in `docs/facebook_message_automation.md`.
+
 ## Future Upgrade Ideas
 
 - Provider portal authentication and self-service account management

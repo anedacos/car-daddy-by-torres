@@ -20,7 +20,30 @@ test('matches only an exact configured recruitment keyword', () => {
   assert.equal(matchFacebookMessageStep(flow, 'mecanico')?.id, 'mechanic_interest_es');
   assert.equal(matchFacebookMessageStep(flow, 'MECÁNICO')?.id, 'mechanic_interest_es');
   assert.equal(matchFacebookMessageStep(flow, 'quiero registrarme')?.id, 'provider_registration_link_es');
+  assert.equal(matchFacebookMessageStep(flow, 'mechanic')?.id, 'mechanic_interest_en');
+  assert.equal(matchFacebookMessageStep(flow, 'I want to register')?.id, 'provider_registration_link_en');
+  assert.equal(matchFacebookMessageStep(flow, 'I want to join')?.id, 'provider_registration_link_en');
   assert.equal(matchFacebookMessageStep(flow, 'Necesito un mecánico'), null);
+});
+
+test('keeps Meta Business Suite replies within the 500 character limit', () => {
+  const flow = preparedConfig.campaign.private_message_flow;
+  const platformReplies = flow.steps
+    .map((step) => step.meta_business_suite_reply)
+    .filter(Boolean);
+
+  assert.equal(platformReplies.length, 2);
+  assert.ok(platformReplies.every((reply) => reply.length <= 500));
+});
+
+test('keeps Spanish and English recruitment queues separate', () => {
+  const campaign = preparedConfig.campaign;
+  assert.equal(campaign.localized_group_posts.es.queue, 'provider_recruitment_es');
+  assert.equal(campaign.localized_group_posts.en.queue, 'provider_recruitment_en');
+  assert.notEqual(
+    campaign.localized_group_posts.es.queue,
+    campaign.localized_group_posts.en.queue,
+  );
 });
 
 test('keeps prepared Facebook private messages blocked', () => {

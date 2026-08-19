@@ -1,0 +1,35 @@
+{
+  "schema": "car-daddy-facebook-message-automation/v2",
+  "status": "webhook_code_ready_pending_meta_connection",
+  "page": {
+    "name": "Car Daddy By Torres",
+    "facebook_profile_id": "61591725022520",
+    "facebook_page_id": "1232877039901749"
+  },
+  "welcome": {
+    "owner": "meta_business_suite",
+    "send_from_webhook": false,
+    "message": "Hi! 👋 Welcome to Car Daddy By Torres.\n\nHow can we help you today?\n\n🔧 Need service for your vehicle?\n👨‍🔧 Are you a mechanic interested in joining our network?\n\nJust send us a message and we’ll guide you from there.\n\nEspañol también disponible."
+  },
+  "webhook": {
+    "path": "/api/facebook-webhook",
+    "classification": "deterministic_intent_v1",
+    "paid_ai_required": false,
+    "signature_verification": "x-hub-signature-256",
+    "deduplication_binding": "FACEBOOK_MESSAGE_EVENTS",
+    "deduplication_ttl_days": 7
+  },
+  "intents": [
+    "SERVICE_REQUEST",
+    "SERVICE_AREA_QUESTION",
+    "PROVIDER_INTEREST",
+    "GENERAL_INFORMATION",
+    "UNCLEAR"
+  ],
+  "links": {
+    "service_en": "https://car-daddy-by-torres.pages.dev/solicitar-servicio?source=facebook&campaign=messenger",
+    "service_es": "https://car-daddy-by-torres.pages.dev/es/solicitar-servicio?source=facebook&campaign=messenger",
+    "provider_en": "https://car-daddy-by-torres.pages.dev/unete-a-la-red?source=facebook&campaign=provider-network-beta-en",
+    "provider_es": "https://car-daddy-by-torres.pages.dev/es/unete-a-la-red?source=facebook&campaign=provider-network-beta"
+  }
+}
