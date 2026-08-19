@@ -2220,13 +2220,13 @@ h3 {
   resize: vertical;
 }
 
-.city-autocomplete {
+.compact-autocomplete {
   display: grid;
   gap: 6px;
   min-width: 0;
 }
 
-.city-suggestions {
+.compact-suggestions {
   background: #fff;
   border: 1px solid #cbd5db;
   border-radius: 6px;
@@ -2238,7 +2238,7 @@ h3 {
   width: 100%;
 }
 
-.city-suggestions button {
+.compact-suggestions button {
   background: #fff;
   border: 0;
   border-bottom: 1px solid #e4e9ec;
@@ -2251,12 +2251,12 @@ h3 {
   width: 100%;
 }
 
-.city-suggestions button:last-child {
+.compact-suggestions button:last-child {
   border-bottom: 0;
 }
 
-.city-suggestions button:hover,
-.city-suggestions button:focus-visible {
+.compact-suggestions button:hover,
+.compact-suggestions button:focus-visible {
   background: #fff7dc;
   outline: 2px solid #e9ae18;
   outline-offset: -2px;
@@ -2264,6 +2264,10 @@ h3 {
 
 .full {
   grid-column: 1 / -1;
+}
+
+[data-wizard-step] {
+  scroll-margin-top: 112px;
 }
 
 .address-coordination-note {
@@ -2591,7 +2595,7 @@ td {
     padding-top: 120px;
   }
 
-  .city-suggestions {
+  .compact-suggestions {
     max-height: 142px;
   }
 

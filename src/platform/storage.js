@@ -88,6 +88,7 @@ export async function submitServiceCase(payload) {
     ...payload,
     street_address: null,
     approximate_location: 'Exact address coordinated after provider assignment',
+    problem_description: String(payload.problem_description || '').trim() || 'No problem description provided; confirm symptoms with the customer.',
   };
   if (isPlatformMockMode) {
     const record = await platformInsert('service_cases', {

@@ -19,6 +19,33 @@ export const citiesByState = {
   ],
 };
 
+export const vehicleMakes = [
+  'Acura', 'Audi', 'BMW', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Fiat', 'Ford',
+  'Genesis', 'GMC', 'Honda', 'Hyundai', 'Infiniti', 'Jaguar', 'Jeep', 'Kia', 'Land Rover',
+  'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mini', 'Mitsubishi', 'Nissan', 'Porsche',
+  'Ram', 'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo',
+];
+
+export const vehicleModelsByMake = {
+  Chevrolet: ['Camaro', 'Colorado', 'Corvette', 'Equinox', 'Malibu', 'Silverado 1500', 'Silverado 2500HD', 'Suburban', 'Tahoe', 'Traverse'],
+  Dodge: ['Challenger', 'Charger', 'Durango', 'Grand Caravan', 'Journey'],
+  Ford: ['Bronco', 'Edge', 'Escape', 'Expedition', 'Explorer', 'F-150', 'F-250', 'Fusion', 'Maverick', 'Mustang', 'Ranger', 'Transit'],
+  GMC: ['Acadia', 'Canyon', 'Sierra 1500', 'Sierra 2500HD', 'Terrain', 'Yukon'],
+  Honda: ['Accord', 'Civic', 'CR-V', 'Fit', 'HR-V', 'Odyssey', 'Passport', 'Pilot', 'Ridgeline'],
+  Hyundai: ['Accent', 'Elantra', 'Kona', 'Palisade', 'Santa Cruz', 'Santa Fe', 'Sonata', 'Tucson'],
+  Jeep: ['Cherokee', 'Compass', 'Gladiator', 'Grand Cherokee', 'Renegade', 'Wrangler'],
+  Kia: ['Forte', 'K5', 'Rio', 'Sedona', 'Seltos', 'Sorento', 'Soul', 'Sportage', 'Telluride'],
+  Lexus: ['ES', 'GX', 'IS', 'LS', 'NX', 'RX', 'UX'],
+  Mazda: ['CX-30', 'CX-5', 'CX-50', 'CX-9', 'Mazda3', 'Mazda6', 'MX-5 Miata'],
+  'Mercedes-Benz': ['C-Class', 'E-Class', 'GLA', 'GLC', 'GLE', 'S-Class', 'Sprinter'],
+  Nissan: ['Altima', 'Armada', 'Frontier', 'Kicks', 'Maxima', 'Murano', 'Pathfinder', 'Rogue', 'Sentra', 'Titan', 'Versa'],
+  Ram: ['1500', '2500', '3500', 'ProMaster'],
+  Subaru: ['Ascent', 'Crosstrek', 'Forester', 'Impreza', 'Legacy', 'Outback', 'WRX'],
+  Tesla: ['Model 3', 'Model S', 'Model X', 'Model Y', 'Cybertruck'],
+  Toyota: ['4Runner', 'Camry', 'Corolla', 'Highlander', 'Prius', 'RAV4', 'Sequoia', 'Sienna', 'Tacoma', 'Tundra'],
+  Volkswagen: ['Atlas', 'Golf', 'ID.4', 'Jetta', 'Passat', 'Taos', 'Tiguan'],
+};
+
 export const providerStatuses = [
   'Draft',
   'Pending',
@@ -137,6 +164,54 @@ export function getCitySuggestions(state, query = '', limit = 4) {
       return a.localeCompare(b);
     })
     .slice(0, limit);
+}
+
+/** @param {string[]} options @param {string} query @param {number} limit */
+function getCompactSuggestions(options, query = '', limit = 4) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+  return options
+    .filter((option) => option.toLowerCase().includes(normalizedQuery) && option.toLowerCase() !== normalizedQuery)
+    .sort((a, b) => {
+      const aStarts = a.toLowerCase().startsWith(normalizedQuery);
+      const bStarts = b.toLowerCase().startsWith(normalizedQuery);
+      if (aStarts !== bStarts) return aStarts ? -1 : 1;
+      return a.localeCompare(b);
+    })
+    .slice(0, limit);
+}
+
+/** @param {string} query @param {number} limit */
+export function getVehicleMakeSuggestions(query = '', limit = 4) {
+  return getCompactSuggestions(vehicleMakes, query, limit);
+}
+
+/** @param {string} make @param {string} query @param {number} limit */
+export function getVehicleModelSuggestions(make = '', query = '', limit = 4) {
+  const matchedMake = vehicleMakes.find((value) => value.toLowerCase() === make.trim().toLowerCase());
+  if (!matchedMake) return [];
+  const models = /** @type {Record<string, string[]>} */ (vehicleModelsByMake)[matchedMake] || [];
+  return getCompactSuggestions(models, query, limit);
+}
+
+/** @param {{ vehicle_make?: string, vehicle_model?: string, fuel_type?: string }} vehicle */
+export function inferVehicleType(vehicle) {
+  const make = String(vehicle.vehicle_make || '').trim().toLowerCase();
+  const model = String(vehicle.vehicle_model || '').trim().toLowerCase();
+  const fuel = String(vehicle.fuel_type || '').trim().toLowerCase();
+  const identity = `${make} ${model}`;
+  const boatMakes = ['bayliner', 'boston whaler', 'chaparral', 'sea ray', 'tracker boats'];
+  const motorcycleMakes = ['aprilia', 'ducati', 'harley-davidson', 'indian', 'kawasaki', 'ktm', 'triumph'];
+  const equipmentMakes = ['bobcat', 'caterpillar', 'case', 'john deere', 'komatsu', 'kubota'];
+  const atvModels = ['foreman', 'grizzly', 'outlander', 'rancher', 'raptor', 'sportsman'];
+  const truckModels = ['colorado', 'f-150', 'f-250', 'frontier', 'gladiator', 'maverick', 'ranger', 'ridgeline', 'sierra', 'silverado', 'tacoma', 'titan', 'tundra', '1500', '2500', '3500'];
+
+  if (boatMakes.some((value) => identity.includes(value))) return 'Boat';
+  if (motorcycleMakes.some((value) => identity.includes(value))) return 'Motorcycle';
+  if (atvModels.some((value) => identity.includes(value))) return 'ATV / Quad';
+  if (equipmentMakes.some((value) => identity.includes(value))) return 'Heavy equipment';
+  if (truckModels.some((value) => model.includes(value))) return fuel === 'diesel' ? 'Diesel truck' : 'Light truck';
+  return 'Car';
 }
 
 /**

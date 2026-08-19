@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const pagesPath = new URL('../src/platform/PlatformPages.jsx', import.meta.url);
+const storagePath = new URL('../src/platform/storage.js', import.meta.url);
 const migrationPath = new URL('../supabase/migrations/20260816200000_beta_email_notifications.sql', import.meta.url);
 const exactAddressMigrationPath = new URL('../supabase/migrations/20260819173000_exact_service_addresses.sql', import.meta.url);
 const addressCoordinationMigrationPath = new URL('../supabase/migrations/20260819190000_coordinate_address_after_assignment.sql', import.meta.url);
@@ -27,10 +28,24 @@ test('customer intake collects only the service area before provider assignment'
 test('mobile city entry uses compact in-flow suggestions instead of a native datalist', async () => {
   const source = await readFile(pagesPath, 'utf8');
 
-  assert.match(source, /function CityAutocompleteField/);
-  assert.match(source, /city-suggestions/);
+  assert.match(source, /function CompactAutocompleteField/);
+  assert.match(source, /compact-suggestions/);
   assert.doesNotMatch(source, /<datalist/);
   assert.doesNotMatch(source, /list="(?:provider|service)-city-options"/);
+});
+
+test('customer vehicle step stays focused and keeps optional evidence optional', async () => {
+  const source = await readFile(pagesPath, 'utf8');
+  const storage = await readFile(storagePath, 'utf8');
+
+  assert.match(source, /scrollToWizardStep\(nextStep\)/);
+  assert.match(source, /vehicle_starts: '', vehicle_moves: ''/);
+  assert.match(source, /\['vehicle_year', 'vehicle_make', 'vehicle_model', 'fuel_type', 'vehicle_starts', 'vehicle_moves'\]/);
+  assert.match(source, /Problem description, optional/);
+  assert.match(source, /Photos of the problem, optional/);
+  assert.match(source, /Videos of the problem, optional/);
+  assert.doesNotMatch(source, /\['Yes', 'No', 'Unknown'\]/);
+  assert.match(storage, /No problem description provided; confirm symptoms with the customer/);
 });
 
 test('database queues idempotent verification emails without paid channels', async () => {

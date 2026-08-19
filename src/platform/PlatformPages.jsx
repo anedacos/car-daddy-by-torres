@@ -22,7 +22,10 @@ import {
   copyScheduleToDays,
   digitsOnly,
   getCitySuggestions,
+  getVehicleMakeSuggestions,
+  getVehicleModelSuggestions,
   incidentTypes,
+  inferVehicleType,
   isValidEmail,
   isValidUsPhone,
   isValidZipCode,
@@ -88,27 +91,26 @@ function Field({ label, children, required, hint, fieldKey, invalid = false, err
   );
 }
 
-function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid = false, error }) {
+function CompactAutocompleteField({ label, value, onChange, suggestions, hint, suggestionLabel, fieldKey, required = false, invalid = false, error, autoComplete = 'off' }) {
   const [focused, setFocused] = useState(false);
   const inputId = React.useId();
   const listId = `${inputId}-suggestions`;
-  const suggestions = getCitySuggestions(state, value);
   const showSuggestions = focused && suggestions.length > 0;
 
-  function selectCity(city) {
-    onChange(city);
+  function selectOption(option) {
+    onChange(option);
     setFocused(false);
   }
 
   return (
-    <div className={`field city-field ${invalid ? 'field-invalid' : ''}`} data-field={fieldKey}>
-      <label htmlFor={inputId}>{tx(lang, 'City', 'Ciudad')} <b>*</b></label>
-      <div className="city-autocomplete">
+    <div className={`field autocomplete-field ${invalid ? 'field-invalid' : ''}`} data-field={fieldKey}>
+      <label htmlFor={inputId}>{label} {required ? <b>*</b> : null}</label>
+      <div className="compact-autocomplete">
         <input
           id={inputId}
           type="text"
           role="combobox"
-          autoComplete="address-level2"
+          autoComplete={autoComplete}
           aria-autocomplete="list"
           aria-controls={showSuggestions ? listId : undefined}
           aria-expanded={showSuggestions}
@@ -124,18 +126,40 @@ function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid
             if (event.key === 'Escape') setFocused(false);
             if (event.key === 'Enter' && showSuggestions) {
               event.preventDefault();
-              selectCity(suggestions[0]);
+              selectOption(suggestions[0]);
             }
           }}
         />
-        {showSuggestions ? <div className="city-suggestions" id={listId} role="listbox" aria-label={tx(lang, 'City suggestions', 'Sugerencias de ciudades')}>
-          {suggestions.map((city) => <button key={city} type="button" role="option" aria-selected="false" onPointerDown={(event) => { event.preventDefault(); selectCity(city); }} onClick={() => selectCity(city)}>{city}</button>)}
+        {showSuggestions ? <div className="compact-suggestions" id={listId} role="listbox" aria-label={suggestionLabel}>
+          {suggestions.map((option) => <button key={option} type="button" role="option" aria-selected="false" onPointerDown={(event) => { event.preventDefault(); selectOption(option); }} onClick={() => selectOption(option)}>{option}</button>)}
         </div> : null}
       </div>
-      <small>{tx(lang, 'Type to see up to four matching cities.', 'Escribe para ver hasta cuatro ciudades coincidentes.')}</small>
+      {hint ? <small>{hint}</small> : null}
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
     </div>
   );
+}
+
+function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid = false, error }) {
+  return <CompactAutocompleteField
+    label={tx(lang, 'City', 'Ciudad')}
+    value={value}
+    onChange={onChange}
+    suggestions={getCitySuggestions(state, value)}
+    hint={tx(lang, 'Type to see up to four matching cities.', 'Escribe para ver hasta cuatro ciudades coincidentes.')}
+    suggestionLabel={tx(lang, 'City suggestions', 'Sugerencias de ciudades')}
+    fieldKey={fieldKey}
+    required
+    invalid={invalid}
+    error={error}
+    autoComplete="address-level2"
+  />;
+}
+
+function scrollToWizardStep(step) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelector(`[data-wizard-step="${step}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
 }
 
 function PageIntro({ eyebrow, title, body }) {
@@ -818,8 +842,8 @@ function ProviderApplicationPage({ lang, shell }) {
 
 const initialCase = {
   customer_name: '', phone: '', email: '', state: 'Mississippi', city: '', zip_code: '',
-  vehicle_year: '', vehicle_make: '', vehicle_model: '', vin: '', vehicle_type: 'Car', fuel_type: 'Gasoline',
-  problem_description: '', vehicle_starts: 'Unknown', vehicle_moves: 'Unknown', service_requested: 'Diagnostics',
+  vehicle_year: '', vehicle_make: '', vehicle_model: '', vin: '', vehicle_type: 'Car', fuel_type: '',
+  problem_description: '', vehicle_starts: '', vehicle_moves: '', service_requested: 'Diagnostics',
   specialty_needed: 'General automotive mechanics', urgency: 'Immediate', preferred_date: '', preferred_time: '',
   preferred_language: 'English', share_consent: false, platform_notice_acknowledged: false,
   no_advance_payment_acknowledged: false, source: '', campaign: '',
@@ -847,6 +871,13 @@ function ServiceRequestPage({ lang, shell }) {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
   };
+  const setVehicleField = (key, value) => {
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      return { ...next, vehicle_type: inferVehicleType(next) };
+    });
+    setFieldErrors((current) => ({ ...current, [key]: undefined }));
+  };
 
   function showCaseErrors(errors) {
     setFieldErrors(errors);
@@ -862,7 +893,7 @@ function ServiceRequestPage({ lang, shell }) {
   function next() {
     const requiredKeys = step === 1
       ? ['customer_name', 'phone', 'email', 'state', 'city', 'zip_code']
-      : ['vehicle_year', 'vehicle_make', 'vehicle_model', 'problem_description'];
+      : ['vehicle_year', 'vehicle_make', 'vehicle_model', 'fuel_type', 'vehicle_starts', 'vehicle_moves'];
     const errors = Object.fromEntries(requiredKeys.filter((key) => !form[key]).map((key) => [key, tx(lang, 'This field is required.', 'Este campo es obligatorio.')]));
     if (step === 1 && form.phone && !isValidUsPhone(form.phone)) errors.phone = tx(lang, 'Enter a 10-digit phone number.', 'Ingresa un teléfono de 10 dígitos.');
     if (step === 1 && form.email && !isValidEmail(form.email)) errors.email = tx(lang, 'Enter a valid email address, such as name@example.com.', 'Ingresa un correo válido, por ejemplo nombre@ejemplo.com.');
@@ -873,8 +904,9 @@ function ServiceRequestPage({ lang, shell }) {
     }
     setFieldErrors({});
     setMessage('');
-    setStep((current) => current + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const nextStep = step + 1;
+    setStep(nextStep);
+    scrollToWizardStep(nextStep);
   }
 
   async function submit(event) {
@@ -890,7 +922,7 @@ function ServiceRequestPage({ lang, shell }) {
         ...(await uploadPrivateFiles('case-private', photos, `${folder}/photos`, 'image')).map((item) => ({ ...item, category: 'customer_photo' })),
         ...(await uploadPrivateFiles('case-private', videos, `${folder}/videos`, 'video')).map((item) => ({ ...item, category: 'customer_video' })),
       ];
-      const result = await submitServiceCase({ ...form, media_manifest: media });
+      const result = await submitServiceCase({ ...form, vehicle_type: inferVehicleType(form), media_manifest: media });
       setConfirmation(result);
       setMessage('');
     } catch (error) {
@@ -935,7 +967,7 @@ function ServiceRequestPage({ lang, shell }) {
         <EmailDeliveryNotice lang={lang} />
         <WizardProgress step={step} labels={tx(lang, ['Contact', 'Vehicle', 'Schedule & consent'], ['Contacto', 'Vehículo', 'Horario y autorización'])} />
         <form className="platform-wizard" onSubmit={submit}>
-        {step === 1 ? <div className="form-grid">
+        {step === 1 ? <div className="form-grid" data-wizard-step="1">
           <Field label={tx(lang, 'Name', 'Nombre')} required fieldKey="customer_name" invalid={Boolean(fieldErrors.customer_name)} error={fieldErrors.customer_name}><input value={form.customer_name} onChange={(e) => set('customer_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only. Used only when a provider has accepted.', '10 dígitos, solo números. Se usa únicamente cuando un proveedor haya aceptado.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" maxLength="10" value={form.phone} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
           <Field label={tx(lang, 'Email', 'Correo')} required hint={tx(lang, 'Required for verification and all beta communications.', 'Obligatorio para verificación y todas las comunicaciones de la beta.')} fieldKey="email" invalid={Boolean(fieldErrors.email)} error={fieldErrors.email}><input type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value.trimStart())} /></Field>
@@ -945,21 +977,20 @@ function ServiceRequestPage({ lang, shell }) {
           <p className="address-coordination-note full"><LockKeyhole size={16} /><span>{tx(lang, 'For privacy, you do not need to enter the street address here. You will coordinate the exact service location directly with the assigned mechanic after contact is established.', 'Por privacidad, no necesitas ingresar la calle o dirección exacta aquí. Coordinarás la ubicación exacta del servicio directamente con el mecánico asignado cuando se pongan en contacto.')}</span></p>
         </div> : null}
 
-        {step === 2 ? <div className="form-grid">
-          <Field label={tx(lang, 'Year', 'Año')} required><input value={form.vehicle_year} onChange={(e) => set('vehicle_year', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Make', 'Marca')} required><input value={form.vehicle_make} onChange={(e) => set('vehicle_make', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Model', 'Modelo')} required><input value={form.vehicle_model} onChange={(e) => set('vehicle_model', e.target.value)} /></Field>
-          <Field label="VIN, optional"><input value={form.vin} onChange={(e) => set('vin', e.target.value)} /></Field>
-          <Field label={tx(lang, 'Vehicle type', 'Tipo de vehículo')} required><select value={form.vehicle_type} onChange={(e) => set('vehicle_type', e.target.value)}>{vehicleTypes.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
-          <Field label={tx(lang, 'Fuel type', 'Tipo de combustible')} required><select value={form.fuel_type} onChange={(e) => set('fuel_type', e.target.value)}>{['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Other'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
-          <Field label={tx(lang, 'Does the vehicle start?', '¿El vehículo enciende?')} required><select value={form.vehicle_starts} onChange={(e) => set('vehicle_starts', e.target.value)}>{['Yes', 'No', 'Unknown'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
-          <Field label={tx(lang, 'Can the vehicle move?', '¿El vehículo se mueve?')} required><select value={form.vehicle_moves} onChange={(e) => set('vehicle_moves', e.target.value)}>{['Yes', 'No', 'Unknown'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
-          <label className="field full"><span>{tx(lang, 'Problem description', 'Descripción del problema')} *</span><textarea value={form.problem_description} onChange={(e) => set('problem_description', e.target.value)} /></label>
-          <FilePicker label={tx(lang, 'Photos, optional', 'Fotos, opcional')} accept="image/jpeg,image/png,image/webp" onChange={setPhotos} />
-          <FilePicker label={tx(lang, 'Videos, optional', 'Videos, opcional')} accept="video/mp4,video/quicktime,video/webm" onChange={setVideos} />
+        {step === 2 ? <div className="form-grid" data-wizard-step="2">
+          <Field label={tx(lang, 'Year', 'Año')} required fieldKey="vehicle_year" invalid={Boolean(fieldErrors.vehicle_year)} error={fieldErrors.vehicle_year}><input inputMode="numeric" pattern="[0-9]*" maxLength="4" value={form.vehicle_year} onChange={(e) => setVehicleField('vehicle_year', digitsOnly(e.target.value, 4))} /></Field>
+          <CompactAutocompleteField label={tx(lang, 'Make', 'Marca')} value={form.vehicle_make} onChange={(value) => { setVehicleField('vehicle_make', value); setVehicleField('vehicle_model', ''); }} suggestions={getVehicleMakeSuggestions(form.vehicle_make)} hint={tx(lang, 'Type to see matching makes. You can also enter another make.', 'Escribe para ver marcas coincidentes. También puedes ingresar otra marca.')} suggestionLabel={tx(lang, 'Vehicle make suggestions', 'Sugerencias de marcas')} fieldKey="vehicle_make" required invalid={Boolean(fieldErrors.vehicle_make)} error={fieldErrors.vehicle_make} />
+          <CompactAutocompleteField label={tx(lang, 'Model', 'Modelo')} value={form.vehicle_model} onChange={(value) => setVehicleField('vehicle_model', value)} suggestions={getVehicleModelSuggestions(form.vehicle_make, form.vehicle_model)} hint={tx(lang, 'Type to see common models for the selected make.', 'Escribe para ver modelos comunes de la marca seleccionada.')} suggestionLabel={tx(lang, 'Vehicle model suggestions', 'Sugerencias de modelos')} fieldKey="vehicle_model" required invalid={Boolean(fieldErrors.vehicle_model)} error={fieldErrors.vehicle_model} />
+          <Field label={tx(lang, 'VIN, optional', 'VIN, opcional')}><input autoCapitalize="characters" maxLength="17" value={form.vin} onChange={(e) => set('vin', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17))} /></Field>
+          <Field label={tx(lang, 'Fuel type', 'Tipo de combustible')} required fieldKey="fuel_type" invalid={Boolean(fieldErrors.fuel_type)} error={fieldErrors.fuel_type}><select value={form.fuel_type} onChange={(e) => setVehicleField('fuel_type', e.target.value)}><option value="">{tx(lang, 'Select fuel type', 'Selecciona el combustible')}</option>{['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Other'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
+          <Field label={tx(lang, 'Does the vehicle start?', '¿El vehículo enciende?')} required fieldKey="vehicle_starts" invalid={Boolean(fieldErrors.vehicle_starts)} error={fieldErrors.vehicle_starts}><select value={form.vehicle_starts} onChange={(e) => set('vehicle_starts', e.target.value)}><option value="">{tx(lang, 'Select Yes or No', 'Selecciona Sí o No')}</option>{['Yes', 'No'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
+          <Field label={tx(lang, 'Can the vehicle move?', '¿El vehículo se mueve?')} required fieldKey="vehicle_moves" invalid={Boolean(fieldErrors.vehicle_moves)} error={fieldErrors.vehicle_moves}><select value={form.vehicle_moves} onChange={(e) => set('vehicle_moves', e.target.value)}><option value="">{tx(lang, 'Select Yes or No', 'Selecciona Sí o No')}</option>{['Yes', 'No'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
+          <Field className="full" label={tx(lang, 'Problem description, optional', 'Descripción del problema, opcional')} hint={tx(lang, 'Briefly describe the symptom, sound, warning light, leak, or when the problem occurs.', 'Describe brevemente el síntoma, sonido, luz de advertencia, fuga o cuándo ocurre el problema.')}><textarea value={form.problem_description} onChange={(e) => set('problem_description', e.target.value)} /></Field>
+          <FilePicker label={tx(lang, 'Photos of the problem, optional', 'Fotos del problema, opcional')} hint={tx(lang, 'Upload clear, close photos of the affected area, warning lights, leaks, damage, or relevant component. Avoid unrelated exterior photos.', 'Sube fotos claras y cercanas del área afectada, luces de advertencia, fugas, daños o componente relacionado. Evita fotos exteriores que no muestren el problema.')} accept="image/jpeg,image/png,image/webp" onChange={setPhotos} files={photos} />
+          <FilePicker label={tx(lang, 'Videos of the problem, optional', 'Videos del problema, opcional')} hint={tx(lang, 'Upload a short video showing the symptom, sound, movement, smoke, leak, dashboard warning, or affected component.', 'Sube un video corto que muestre el síntoma, sonido, movimiento, humo, fuga, aviso del tablero o componente afectado.')} accept="video/mp4,video/quicktime,video/webm" onChange={setVideos} files={videos} />
         </div> : null}
 
-        {step === 3 ? <div className="form-grid">
+        {step === 3 ? <div className="form-grid" data-wizard-step="3">
           <Field label={tx(lang, 'Requested service', 'Servicio solicitado')} required><select value={form.service_requested} onChange={(e) => set('service_requested', e.target.value)}>{serviceTypes.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Likely specialty', 'Especialidad probable')}><select value={form.specialty_needed} onChange={(e) => set('specialty_needed', e.target.value)}>{specialties.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Timing', 'Atención')} required><select value={form.urgency} onChange={(e) => set('urgency', e.target.value)}>{['Immediate', 'Scheduled'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
@@ -974,7 +1005,7 @@ function ServiceRequestPage({ lang, shell }) {
           </div>
         </div> : null}
         {message ? <p className="status-message">{message}</p> : null}
-        <WizardActions step={step} total={3} back={() => setStep((current) => current - 1)} next={next} submitLabel={tx(lang, 'Create Service Case', 'Crear Caso de Servicio')} busy={busy} lang={lang} />
+        <WizardActions step={step} total={3} back={() => { const previousStep = step - 1; setStep(previousStep); scrollToWizardStep(previousStep); }} next={next} submitLabel={tx(lang, 'Create Service Case', 'Crear Caso de Servicio')} busy={busy} lang={lang} />
         </form>
       </> : null}
     </ShellComponent>
