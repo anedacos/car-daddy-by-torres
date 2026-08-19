@@ -2223,6 +2223,22 @@ h3 {
   grid-column: 1 / -1;
 }
 
+.address-coordination-note {
+  align-items: flex-start;
+  color: #5d6871;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  line-height: 1.45;
+  margin: -2px 0 0;
+}
+
+.address-coordination-note svg {
+  color: #b67a00;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
 .checkbox {
   align-items: flex-start;
   display: flex;

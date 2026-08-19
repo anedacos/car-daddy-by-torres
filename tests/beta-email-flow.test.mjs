@@ -5,6 +5,7 @@ import test from 'node:test';
 const pagesPath = new URL('../src/platform/PlatformPages.jsx', import.meta.url);
 const migrationPath = new URL('../supabase/migrations/20260816200000_beta_email_notifications.sql', import.meta.url);
 const exactAddressMigrationPath = new URL('../supabase/migrations/20260819173000_exact_service_addresses.sql', import.meta.url);
+const addressCoordinationMigrationPath = new URL('../supabase/migrations/20260819190000_coordinate_address_after_assignment.sql', import.meta.url);
 
 test('customer intake requires email and advance-payment protection', async () => {
   const source = await readFile(pagesPath, 'utf8');
@@ -15,13 +16,12 @@ test('customer intake requires email and advance-payment protection', async () =
   assert.match(source, /Beta communications are by email/);
 });
 
-test('customer intake requires a structured exact service address', async () => {
+test('customer intake collects only the service area before provider assignment', async () => {
   const source = await readFile(pagesPath, 'utf8');
 
-  assert.match(source, /street_address: ''/);
-  assert.match(source, /\['customer_name', 'phone', 'email', 'street_address', 'city', 'state', 'zip_code'\]/);
-  assert.match(source, /Exact service street address/);
-  assert.doesNotMatch(source, /Address or approximate location/);
+  assert.match(source, /\['customer_name', 'phone', 'email', 'state', 'city', 'zip_code'\]/);
+  assert.match(source, /Por privacidad, no necesitas ingresar la calle o dirección exacta aquí/);
+  assert.doesNotMatch(source, /fieldKey="street_address"/);
 });
 
 test('database queues idempotent verification emails without paid channels', async () => {
@@ -36,11 +36,13 @@ test('database queues idempotent verification emails without paid channels', asy
   assert.match(migration, /'ADVANCE_PAYMENT_REQUEST'/);
 });
 
-test('database stores an exact street address while preserving legacy requests', async () => {
-  const migration = await readFile(exactAddressMigrationPath, 'utf8');
+test('database leaves the street address optional until provider assignment', async () => {
+  const initialMigration = await readFile(exactAddressMigrationPath, 'utf8');
+  const finalMigration = await readFile(addressCoordinationMigrationPath, 'utf8');
 
-  assert.match(migration, /add column if not exists street_address text/);
-  assert.match(migration, /set street_address = trim\(approximate_location\)/);
-  assert.match(migration, /p_payload->>'street_address'/);
-  assert.match(migration, /service_address, p_payload->>'state', trim\(p_payload->>'city'\)/);
+  assert.match(initialMigration, /add column if not exists street_address text/);
+  assert.match(finalMigration, /alter column street_address drop not null/);
+  assert.match(finalMigration, /public intake does not collect it/);
+  assert.match(finalMigration, /null, p_payload->>'state', trim\(p_payload->>'city'\)/);
+  assert.match(finalMigration, /Exact address coordinated after provider assignment/);
 });

@@ -345,7 +345,7 @@ function CaseManagement({ cases, providers, events, reload }) {
   const [selected, setSelected] = useState({});
   const [notes, setNotes] = useState({});
   const approvedProviders = providers.filter((provider) => provider.account_status === 'Active');
-  const visible = cases.filter((serviceCase) => [serviceCase.case_number, serviceCase.customer_name, serviceCase.street_address, serviceCase.approximate_location, serviceCase.city, serviceCase.zip_code, serviceCase.status]
+  const visible = cases.filter((serviceCase) => [serviceCase.case_number, serviceCase.customer_name, serviceCase.city, serviceCase.zip_code, serviceCase.status]
     .join(' ').toLowerCase().includes(filter.toLowerCase()));
 
   async function changeStatus(serviceCase, status) {
@@ -371,7 +371,7 @@ function CaseManagement({ cases, providers, events, reload }) {
             <header><div><strong>{serviceCase.case_number}</strong><span>{serviceCase.status}</span></div><small>{new Date(serviceCase.created_at).toLocaleString()}</small></header>
             <div className="case-admin-grid">
               <div><b>Customer</b><p>{serviceCase.customer_name}<br />{serviceCase.phone}<br />{serviceCase.email}<br /><small>Email: {serviceCase.email_verification_status || 'Not captured'}</small></p></div>
-              <div><b>Service address / vehicle</b><p><strong>{serviceCase.street_address || serviceCase.approximate_location}</strong><br />{serviceCase.city}, {serviceCase.state} {serviceCase.zip_code}<br />{serviceCase.vehicle_year} {serviceCase.vehicle_make} {serviceCase.vehicle_model}</p></div>
+              <div><b>Service area / vehicle</b><p>{serviceCase.city}, {serviceCase.state} {serviceCase.zip_code}<br /><small>Exact address coordinated after provider assignment.</small><br />{serviceCase.vehicle_year} {serviceCase.vehicle_make} {serviceCase.vehicle_model}</p></div>
               <div><b>Request</b><p>{serviceCase.service_requested}<br />{serviceCase.specialty_needed}<br />{serviceCase.urgency}{serviceCase.source ? <><br /><small>Source: {serviceCase.source}{serviceCase.campaign ? ` / ${serviceCase.campaign}` : ''}</small></> : null}</p></div>
               <div><b>Evidence</b><PrivateFiles manifest={serviceCase.media_manifest || []} /></div>
             </div>

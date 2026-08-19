@@ -9,7 +9,7 @@ import {
   updateLocalRecord,
   updateRecord,
 } from '../lib/storage';
-import { createCaseEvent, generateCaseNumber, isValidServiceStreetAddress, validateUpload } from './domain';
+import { createCaseEvent, generateCaseNumber, validateUpload } from './domain';
 import { mockCases, mockComplaints, mockProviderProfiles, mockProviders } from './fixtures';
 import { emailNotificationProvider } from './notifications';
 
@@ -84,12 +84,10 @@ export async function submitProviderApplication(payload) {
 }
 
 export async function submitServiceCase(payload) {
-  const streetAddress = String(payload.street_address || payload.approximate_location || '').trim();
-  if (!isValidServiceStreetAddress(streetAddress)) throw new Error('A complete physical service address is required.');
   const normalizedPayload = {
     ...payload,
-    street_address: streetAddress,
-    approximate_location: streetAddress,
+    street_address: null,
+    approximate_location: 'Exact address coordinated after provider assignment',
   };
   if (isPlatformMockMode) {
     const record = await platformInsert('service_cases', {
