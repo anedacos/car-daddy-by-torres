@@ -54,7 +54,7 @@ async function markProcessed(env, messageId) {
 }
 
 export async function sendFacebookMessage(env, recipientId, text) {
-  const graphVersion = env.FACEBOOK_GRAPH_API_VERSION || 'v23.0';
+  const graphVersion = env.FACEBOOK_GRAPH_API_VERSION || 'v26.0';
   const requestFetch = typeof env.FACEBOOK_SEND_FETCH === 'function'
     ? env.FACEBOOK_SEND_FETCH
     : fetch;
