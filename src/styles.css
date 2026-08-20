@@ -630,6 +630,73 @@ h3 {
   line-height: 1.65;
 }
 
+.beta-program-page {
+  margin: 0 auto;
+  max-width: 980px;
+}
+
+.beta-program-heading {
+  border-bottom: 3px solid #f5b301;
+  padding-bottom: 24px;
+}
+
+.beta-program-heading h1 {
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1.05;
+  margin: 8px 0 14px;
+}
+
+.beta-program-heading > p:last-child {
+  color: #53606a;
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 820px;
+}
+
+.beta-program-sections article {
+  border-bottom: 1px solid #d7dfe4;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.6fr);
+  padding: 24px 0;
+}
+
+.beta-program-sections h2,
+.beta-program-sections p {
+  margin: 0;
+}
+
+.beta-program-sections h2 {
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.beta-program-sections p {
+  color: #53606a;
+  line-height: 1.65;
+}
+
+.beta-legal-review {
+  align-items: flex-start;
+  background: #fff8dc;
+  border-left: 5px solid #f5b301;
+  display: flex;
+  gap: 11px;
+  margin-top: 24px;
+  padding: 15px 17px;
+}
+
+.beta-legal-review > svg {
+  color: #9a6500;
+  flex: 0 0 auto;
+}
+
+.beta-legal-review p {
+  line-height: 1.55;
+  margin: 0;
+}
+
 .wizard-progress {
   display: grid;
   gap: 10px;
@@ -1236,6 +1303,48 @@ h3 {
 
 .email-delivery-notice.compact {
   margin-bottom: 0;
+}
+
+.beta-status-notice {
+  align-items: flex-start;
+  background: #eef3f6;
+  border-left: 5px solid #53606a;
+  display: flex;
+  gap: 12px;
+  margin: 0 auto 20px;
+  max-width: 1060px;
+  padding: 15px 17px;
+}
+
+.beta-status-notice > svg {
+  color: #27313a;
+  flex: 0 0 auto;
+}
+
+.beta-status-notice > div {
+  display: grid;
+  gap: 4px;
+}
+
+.beta-status-notice p {
+  color: #53606a;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.beta-status-notice a,
+.platform-notice a,
+.footer-policy-link {
+  color: #7a4f00;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+.beta-status-notice.compact {
+  margin: 18px 0;
+  text-align: left;
 }
 
 .email-confirmation-notice {
@@ -2613,6 +2722,12 @@ summary {
   color: #dce4e9;
 }
 
+.footer-policy-link {
+  color: #f5c84b;
+  display: inline-block;
+  margin-top: 4px;
+}
+
 .footer-bottom {
   align-items: center;
   border-top: 1px solid rgba(255, 255, 255, 0.16);
@@ -2961,6 +3076,10 @@ td {
   }
 
   .provider-report-policy ol {
+    grid-template-columns: 1fr;
+  }
+
+  .beta-program-sections article {
     grid-template-columns: 1fr;
   }
 

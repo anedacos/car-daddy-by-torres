@@ -444,10 +444,27 @@ function PlatformNotice({ lang }) {
         <strong>{tx(lang, 'How CarDaddy works', 'Cómo funciona CarDaddy')}</strong>
         <p>{tx(
           lang,
-          'CarDaddy is a connection platform. Independent providers decide whether to accept an opportunity, diagnose the vehicle, set their own price, collect payment directly, and agree on repair terms and warranties with the customer.',
-          'CarDaddy es una plataforma de conexión. Los proveedores independientes deciden si aceptan una oportunidad, diagnostican el vehículo, fijan su propio precio, cobran directamente y acuerdan con el cliente la reparación y la garantía.',
+          'CarDaddy operates its own mobile mechanic business and is also testing a separate provider-connection network. Before work begins, confirm whether CarDaddy is providing the service directly or connecting you with an independent provider. For a network referral, that provider decides whether to accept, diagnoses the vehicle, sets the price, collects payment directly, and agrees on repair terms and warranties with you.',
+          'CarDaddy opera su propio negocio de mecánica móvil y también está probando una red separada de conexión con proveedores. Antes de comenzar, confirma si CarDaddy prestará el servicio directamente o te conectará con un proveedor independiente. En una referencia de la red, ese proveedor decide si acepta, diagnostica el vehículo, fija el precio, cobra directamente y acuerda contigo la reparación y la garantía.',
         )}</p>
-        <small>{tx(lang, 'Draft notice for legal review. Not legal advice.', 'Aviso preliminar para revisión legal. No es asesoría legal.')}</small>
+        <a href={`${lang === 'es' ? '/es' : ''}/programa-beta`}>{tx(lang, 'Read the Beta Program Notice', 'Leer el Aviso del Programa Beta')}</a>
+      </div>
+    </aside>
+  );
+}
+
+function BetaStatusNotice({ lang, compact = false }) {
+  return (
+    <aside className={`beta-status-notice ${compact ? 'compact' : ''}`}>
+      <AlertTriangle size={22} />
+      <div>
+        <strong>{tx(lang, 'CarDaddy Network is in a free beta pilot', 'La red CarDaddy está en una prueba beta gratuita')}</strong>
+        <p>{tx(
+          lang,
+          'Coverage, workflows, matching rules and review policies may change as the pilot is tested. Material changes will be disclosed before they apply. The network currently charges providers no membership or commission.',
+          'La cobertura, los procesos, las reglas de asignación y las políticas de revisión pueden cambiar mientras se prueba el piloto. Los cambios importantes se informarán antes de aplicarse. Actualmente la red no cobra membresía ni comisión a los proveedores.',
+        )}</p>
+        <a href={`${lang === 'es' ? '/es' : ''}/programa-beta`}>{tx(lang, 'Beta Program Notice', 'Aviso del Programa Beta')}</a>
       </div>
     </aside>
   );
@@ -826,6 +843,7 @@ function ProviderApplicationPage({ lang, shell }) {
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy Network" title={tx(lang, 'Join the CarDaddy Network', 'Únete a la red CarDaddy')} body={tx(lang, 'Apply as an independent automotive provider. Your profile and private evidence are reviewed before approval.', 'Solicita participar como proveedor automotriz independiente. Tu perfil y evidencia privada se revisan antes de aprobarse.')} />
       {isDemoMode ? <div className="demo-mode-banner"><AlertTriangle size={20} /><div><strong>{tx(lang, 'Temporary review mode', 'Modo temporal de revisión')}</strong><span>{tx(lang, 'Every step contains fictional test data. Demo evidence loads automatically on the final step and any submitted application is clearly marked [DEMO].', 'Todos los pasos contienen datos ficticios de prueba. La evidencia demo se carga automáticamente en el último paso y cualquier solicitud enviada queda marcada claramente como [DEMO].')}</span></div></div> : null}
+      <BetaStatusNotice lang={lang} />
       <EmailDeliveryNotice lang={lang} />
       <section className={`provider-payment-policy ${form.no_advance_fee_acknowledged ? 'is-accepted' : ''}`} aria-labelledby="provider-payment-policy-title">
         <div className="provider-payment-policy-icon"><ShieldCheck size={28} /></div>
@@ -939,7 +957,7 @@ function ProviderApplicationPage({ lang, shell }) {
           </div>
           <FilePicker label={tx(lang, 'Commercial insurance, optional', 'Seguro comercial, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={setInsurance} files={insurance} hint={tx(lang, 'Upload proof only if you currently have commercial coverage.', 'Sube el comprobante solamente si actualmente posees cobertura comercial.')} />
           <div className={`consent-stack full ${fieldErrors.required_consents ? 'field-invalid' : ''}`} data-field="required_consents">
-            <BooleanChoice label={tx(lang, 'I accept the draft network terms and privacy notice.', 'Acepto los términos preliminares de la red y el aviso de privacidad.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />
+            <BooleanChoice label={tx(lang, 'I accept the Beta Program Notice, draft network terms and privacy notice.', 'Acepto el Aviso del Programa Beta, los términos preliminares de la red y el aviso de privacidad.')} description={tx(lang, 'Material policy or future pricing changes require notice before they apply.', 'Los cambios importantes de políticas o precios futuros requieren aviso antes de aplicarse.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />
             <BooleanChoice label={tx(lang, 'I understand that I am applying as an independent provider, not as a CarDaddy employee.', 'Entiendo que solicito participar como proveedor independiente, no como empleado de CarDaddy.')} checked={form.independent_provider_acknowledged} onChange={(value) => set('independent_provider_acknowledged', value)} />
             <div className="payment-policy-confirmed"><Check size={17} /><span>{tx(lang, 'Required no-advance-payment policy accepted.', 'Política obligatoria de cero pagos por adelantado aceptada.')}</span></div>
             <BooleanChoice label={tx(lang, 'Optional media permission', 'Permiso opcional de contenido')} description={tx(lang, 'I confirm I have the right to share the submitted media and grant CarDaddy non-exclusive permission to use selected work samples on its website and social channels. Nothing is published automatically.', 'Confirmo que tengo derecho a compartir el contenido enviado y otorgo a CarDaddy permiso no exclusivo para usar trabajos seleccionados en su sitio web y redes sociales. Nada se publica automáticamente.')} checked={form.media_publicity_consent} onChange={(value) => set('media_publicity_consent', value)} />
@@ -1100,6 +1118,7 @@ function ServiceRequestPage({ lang, shell }) {
   return (
     <ShellComponent>
       <PageIntro eyebrow="CarDaddy" title={tx(lang, 'Request Service', 'Solicitar servicio')} body={tx(lang, 'Tell us what happened. A complete request helps us identify compatible independent providers.', 'Cuéntanos qué ocurrió. Una solicitud completa nos ayuda a identificar proveedores independientes compatibles.')} />
+      <BetaStatusNotice lang={lang} />
       <section className={`provider-payment-policy customer-payment-policy ${form.no_advance_payment_acknowledged ? 'is-accepted' : ''}`} aria-labelledby="customer-payment-policy-title">
         <div className="provider-payment-policy-icon"><ShieldCheck size={28} /></div>
         <div className="provider-payment-policy-copy">
@@ -1151,7 +1170,7 @@ function ServiceRequestPage({ lang, shell }) {
           <div className="full"><PlatformNotice lang={lang} /></div>
           <div className="consent-stack full">
             <BooleanChoice label={tx(lang, 'I authorize CarDaddy to share this request and my contact information with a selected compatible independent provider.', 'Autorizo a CarDaddy a compartir esta solicitud y mis datos de contacto con un proveedor independiente compatible seleccionado.')} checked={form.share_consent} onChange={(value) => set('share_consent', value)} />
-            <BooleanChoice label={tx(lang, 'I understand the platform notice, including direct pricing, payment, repair, and warranty arrangements with the provider.', 'Entiendo el aviso de plataforma, incluyendo los acuerdos directos de precio, pago, reparación y garantía con el proveedor.')} checked={form.platform_notice_acknowledged} onChange={(value) => set('platform_notice_acknowledged', value)} />
+            <BooleanChoice label={tx(lang, 'I understand the Beta Program Notice and will confirm whether CarDaddy or an independent provider is performing the service.', 'Entiendo el Aviso del Programa Beta y confirmaré si CarDaddy o un proveedor independiente realizará el servicio.')} description={tx(lang, 'For a network referral, pricing, payment, repair scope and warranty are agreed directly with the provider.', 'En una referencia de la red, el precio, pago, alcance de la reparación y garantía se acuerdan directamente con el proveedor.')} checked={form.platform_notice_acknowledged} onChange={(value) => set('platform_notice_acknowledged', value)} />
             <div className="payment-policy-confirmed"><Check size={17} /><span>{tx(lang, 'No-advance-payment protection accepted.', 'Protección contra pagos adelantados aceptada.')}</span></div>
           </div>
         </div> : null}
@@ -1251,6 +1270,7 @@ function PortalPage({ lang, shell }) {
         <p className="eyebrow">CarDaddy Network</p>
         <h1>{tx(lang, 'Choose your access', 'Elige tu acceso')}</h1>
         <p>{tx(lang, 'Provider accounts and CarDaddy administration are separate for privacy and security.', 'Las cuentas de proveedores y la administración de CarDaddy están separadas por privacidad y seguridad.')}</p>
+        <BetaStatusNotice lang={lang} compact />
         <div className="portal-paths">
           <article>
             <Network size={28} />
@@ -1266,6 +1286,57 @@ function PortalPage({ lang, shell }) {
           </article>
         </div>
         <div className="private-file-note"><MailCheck size={20} /><span>{tx(lang, 'Beta communications use email and portal notifications only. SMS and paid messaging remain disabled.', 'Las comunicaciones de la beta usan únicamente correo y notificaciones del portal. Los SMS y la mensajería de pago permanecen desactivados.')}</span></div>
+      </section>
+    </ShellComponent>
+  );
+}
+
+function BetaProgramPage({ lang, shell }) {
+  const ShellComponent = shell;
+  const sections = [
+    {
+      title: tx(lang, '1. A pilot that will evolve', '1. Un piloto que irá evolucionando'),
+      body: tx(lang, 'The CarDaddy Network is a beta pilot. Coverage, features, matching, verification, complaint handling, retention and eligibility rules may be adjusted as the system is tested and improved. Material changes will be disclosed before they apply.', 'La red CarDaddy es una prueba beta. La cobertura, funciones, asignación, verificación, manejo de reportes, retención y reglas de elegibilidad pueden ajustarse mientras el sistema se prueba y mejora. Los cambios importantes se informarán antes de aplicarse.'),
+    },
+    {
+      title: tx(lang, '2. Direct CarDaddy service vs. network referral', '2. Servicio directo de CarDaddy vs. referencia de la red'),
+      body: tx(lang, 'Car Daddy by Torres LLC operates its own mobile mechanic business and is also piloting a provider-connection network. A request may be handled directly by CarDaddy or referred to an independent provider. Before work begins, the customer should be told who is performing the service and who is responsible for the estimate, payment, repair and any warranty.', 'Car Daddy by Torres LLC opera su propio negocio de mecánica móvil y también prueba una red de conexión con proveedores. Una solicitud puede ser atendida directamente por CarDaddy o referida a un proveedor independiente. Antes de comenzar, el cliente debe saber quién realizará el servicio y quién responde por el estimado, pago, reparación y cualquier garantía.'),
+    },
+    {
+      title: tx(lang, '3. Independent providers', '3. Proveedores independientes'),
+      body: tx(lang, 'For network referrals, providers are not presented as CarDaddy employees. They choose which opportunities to accept, their availability and service area, use their own tools, determine the diagnosis and proposed work, set their price, and collect payment directly. Labels do not decide legal worker status; the actual relationship and level of control do.', 'En referencias de la red, los proveedores no se presentan como empleados de CarDaddy. Ellos eligen qué oportunidades aceptar, su disponibilidad y área de servicio, usan sus propias herramientas, determinan el diagnóstico y trabajo propuesto, fijan su precio y cobran directamente. El nombre de la relación no determina por sí solo la clasificación legal; importan la relación real y el nivel de control.'),
+    },
+    {
+      title: tx(lang, '4. Free beta and future pricing', '4. Beta gratuita y precios futuros'),
+      body: tx(lang, 'The provider network currently charges no membership fee and no commission on referred work. Direct mechanic services are not free. CarDaddy may test paid network features later, but no future fee or commission will be charged retroactively or without advance disclosure and separate acceptance.', 'La red de proveedores actualmente no cobra membresía ni comisión por trabajos referidos. Los servicios mecánicos directos no son gratuitos. CarDaddy podrá probar funciones pagadas más adelante, pero ningún cargo o comisión futura se cobrará retroactivamente ni sin aviso previo y aceptación separada.'),
+    },
+    {
+      title: tx(lang, '5. Payments and customer protection', '5. Pagos y protección al cliente'),
+      body: tx(lang, 'Do not pay a deposit, reservation, travel fee, mobilization fee or any other amount before the person providing service physically arrives. After arrival, the customer may pay the inspection fee agreed beforehand. For a network referral, any additional repair or transport is a separate agreement directly between the customer and provider.', 'No pagues depósitos, reservas, tarifas de viaje, movilización ni otra cantidad antes de que la persona que prestará el servicio llegue físicamente. Después de llegar, el cliente puede pagar la tarifa de inspección acordada previamente. En una referencia de la red, cualquier reparación o traslado adicional es un acuerdo separado entre el cliente y el proveedor.'),
+    },
+    {
+      title: tx(lang, '6. Verification, reports and enforcement', '6. Verificación, reportes y medidas'),
+      body: tx(lang, 'Applications and evidence are reviewed, but beta screening is not a guarantee of workmanship, licensing, insurance or availability. Customer reports must be tied to a real case and reviewed before they count. CarDaddy may warn, lower queue priority, suspend or remove a provider; serious fraud or safety concerns may be suspended while investigated.', 'Las solicitudes y evidencias se revisan, pero la evaluación beta no garantiza calidad, licencias, seguro ni disponibilidad. Los reportes de clientes deben vincularse a un caso real y revisarse antes de contabilizarse. CarDaddy puede advertir, bajar prioridad, suspender o retirar a un proveedor; los casos graves de fraude o seguridad pueden suspenderse mientras se investigan.'),
+    },
+    {
+      title: tx(lang, '7. Licenses, insurance, taxes and safety', '7. Licencias, seguro, impuestos y seguridad'),
+      body: tx(lang, 'CarDaddy remains responsible for registrations, permits, taxes and insurance applicable to its own direct work and network operations. Each independent provider remains responsible for the credentials, insurance, tax collection and reporting required for their own services and location. The network is not emergency dispatch; call 911 for immediate danger.', 'CarDaddy sigue siendo responsable de los registros, permisos, impuestos y seguros aplicables a su trabajo directo y operación de la red. Cada proveedor independiente sigue siendo responsable de las credenciales, seguro, cobro y declaración de impuestos exigidos para sus propios servicios y ubicación. La red no es un servicio de emergencias; llama al 911 ante peligro inmediato.'),
+    },
+    {
+      title: tx(lang, '8. Privacy and beta records', '8. Privacidad y registros de la beta'),
+      body: tx(lang, 'Contact information and private evidence are used to process requests, verify providers, communicate and review incidents. Access is limited by role, and records may be retained for operational, fraud-prevention and legal needs, then deleted under the current retention policy.', 'La información de contacto y evidencia privada se usa para procesar solicitudes, verificar proveedores, comunicar y revisar incidentes. El acceso se limita por función y los registros pueden conservarse por necesidades operativas, de prevención de fraude y legales, y luego eliminarse según la política de retención vigente.'),
+    },
+  ];
+  return (
+    <ShellComponent>
+      <section className="beta-program-page">
+        <div className="beta-program-heading">
+          <p className="eyebrow">CarDaddy Network</p>
+          <h1>{tx(lang, 'Beta Program Notice', 'Aviso del Programa Beta')}</h1>
+          <p>{tx(lang, 'Plain-language operating notice for the current pilot. This draft should be reviewed by a Mississippi business attorney and tax professional before paid marketplace operations begin.', 'Aviso operativo en lenguaje claro para el piloto actual. Este borrador debe ser revisado por un abogado comercial de Mississippi y un profesional tributario antes de iniciar operaciones pagadas de intermediación.')}</p>
+        </div>
+        <div className="beta-program-sections">{sections.map((section) => <article key={section.title}><h2>{section.title}</h2><p>{section.body}</p></article>)}</div>
+        <div className="beta-legal-review"><ShieldCheck size={21} /><p>{tx(lang, 'This page improves transparency but is not a substitute for signed terms, proper registrations, insurance, tax advice or legal review.', 'Esta página mejora la transparencia, pero no sustituye términos firmados, registros adecuados, seguro, asesoría tributaria ni revisión legal.')}</p></div>
       </section>
     </ShellComponent>
   );
@@ -1314,6 +1385,7 @@ export function getPlatformRoute(pathname) {
   if (clean === '/reportar-problema') return 'complaint';
   if (clean === '/verificar-correo') return 'verify-email';
   if (clean === '/portal') return 'portal';
+  if (clean === '/programa-beta') return 'beta-program';
   return null;
 }
 
@@ -1337,5 +1409,6 @@ export function PlatformPage({ route, lang, setLang, header, footer }) {
   if (route === 'complaint') return <ReportProblemPage lang={lang} shell={Shell} />;
   if (route === 'verify-email') return <VerifyEmailPage lang={lang} shell={Shell} />;
   if (route === 'portal') return <PortalPage lang={lang} shell={Shell} />;
+  if (route === 'beta-program') return <BetaProgramPage lang={lang} shell={Shell} />;
   return <ServiceRequestPage lang={lang} shell={Shell} />;
 }

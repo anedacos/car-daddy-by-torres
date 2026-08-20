@@ -602,6 +602,7 @@ function Footer({ t, lang, setLang }) {
         <p>{t.area.body}</p>
       </div>
       <ContactButtons t={t} compact />
+      <a className="footer-policy-link" href={`${lang === 'es' ? '/es' : ''}/programa-beta`}>{lang === 'es' ? 'Aviso del Programa Beta' : 'Beta Program Notice'}</a>
       <p>{t.footerPrivacy}</p>
       <div className="footer-bottom">
         <span>© {new Date().getFullYear()} {business.legalName}</span>
