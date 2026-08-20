@@ -156,9 +156,9 @@ function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid
   />;
 }
 
-function scrollToWizardStep(step) {
+function scrollToWizardProgress() {
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.querySelector(`[data-wizard-step="${step}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelector('[data-wizard-progress]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
 }
 
@@ -174,13 +174,17 @@ function PageIntro({ eyebrow, title, body }) {
 
 function WizardProgress({ step, labels }) {
   return (
-    <ol className="wizard-progress" aria-label="Progress">
-      {labels.map((label, index) => (
-        <li key={label} className={index + 1 <= step ? 'active' : ''}>
-          <span>{index + 1 < step ? <Check size={15} /> : index + 1}</span>
-          <b>{label}</b>
-        </li>
-      ))}
+    <ol className="wizard-progress" aria-label="Progress" data-wizard-progress>
+      {labels.map((label, index) => {
+        const itemStep = index + 1;
+        const status = itemStep < step ? 'completed' : itemStep === step ? 'current' : 'pending';
+        return (
+          <li key={label} className={status} aria-current={status === 'current' ? 'step' : undefined}>
+            <span>{status === 'completed' ? <Check size={15} /> : itemStep}</span>
+            <b>{label}</b>
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -906,7 +910,7 @@ function ServiceRequestPage({ lang, shell }) {
     setMessage('');
     const nextStep = step + 1;
     setStep(nextStep);
-    scrollToWizardStep(nextStep);
+    scrollToWizardProgress();
   }
 
   async function submit(event) {
@@ -1005,7 +1009,7 @@ function ServiceRequestPage({ lang, shell }) {
           </div>
         </div> : null}
         {message ? <p className="status-message">{message}</p> : null}
-        <WizardActions step={step} total={3} back={() => { const previousStep = step - 1; setStep(previousStep); scrollToWizardStep(previousStep); }} next={next} submitLabel={tx(lang, 'Create Service Case', 'Crear Caso de Servicio')} busy={busy} lang={lang} />
+        <WizardActions step={step} total={3} back={() => { setStep(step - 1); scrollToWizardProgress(); }} next={next} submitLabel={tx(lang, 'Create Service Case', 'Crear Caso de Servicio')} busy={busy} lang={lang} />
         </form>
       </> : null}
     </ShellComponent>

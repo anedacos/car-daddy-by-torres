@@ -38,7 +38,9 @@ test('customer vehicle step stays focused and keeps optional evidence optional',
   const source = await readFile(pagesPath, 'utf8');
   const storage = await readFile(storagePath, 'utf8');
 
-  assert.match(source, /scrollToWizardStep\(nextStep\)/);
+  assert.match(source, /scrollToWizardProgress\(\)/);
+  assert.match(source, /querySelector\('\[data-wizard-progress\]'\)/);
+  assert.match(source, /status = itemStep < step \? 'completed' : itemStep === step \? 'current' : 'pending'/);
   assert.match(source, /vehicle_starts: '', vehicle_moves: ''/);
   assert.match(source, /\['vehicle_year', 'vehicle_make', 'vehicle_model', 'fuel_type', 'vehicle_starts', 'vehicle_moves'\]/);
   assert.match(source, /Problem description, optional/);

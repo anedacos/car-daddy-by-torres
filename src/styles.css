@@ -622,6 +622,7 @@ h3 {
   margin: 0 auto 22px;
   max-width: 1060px;
   padding: 0;
+  scroll-margin-top: 92px;
 }
 
 .wizard-progress li {
@@ -644,14 +645,21 @@ h3 {
   width: 32px;
 }
 
-.wizard-progress li.active {
+.wizard-progress li.current,
+.wizard-progress li.completed {
   color: #101418;
 }
 
-.wizard-progress li.active > span {
+.wizard-progress li.current > span {
   background: #f5b301;
   border-color: #f5b301;
   color: #101418;
+}
+
+.wizard-progress li.completed > span {
+  background: #16835d;
+  border-color: #16835d;
+  color: white;
 }
 
 .platform-wizard {
