@@ -125,7 +125,7 @@ export const specialtyGroups = [
   },
   {
     id: 'specialized',
-    label: 'Mobile & specialized work',
+    label: 'Additional services & specialized equipment',
     options: [
       'Roadside assistance',
       'Car dolly towing',

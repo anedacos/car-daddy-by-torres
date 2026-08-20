@@ -16,6 +16,7 @@ import {
   MailCheck,
   Network,
   Plus,
+  Route,
   ShieldCheck,
   Tractor,
   Trash2,
@@ -60,20 +61,20 @@ const vehicleTypes = ['Car', 'Light truck', 'Diesel truck', 'Heavy equipment', '
 const paymentMethods = ['Cash', 'Zelle', 'Cash App', 'Card', 'Check', 'Other'];
 const serviceTypes = ['Diagnostics', 'Mechanical repair', 'Electrical repair', 'No-start help', 'Brakes', 'Roadside assistance', 'Car dolly towing', 'Other'];
 const providerVehicleCategories = [
-  { id: 'light', label: 'Cars, SUVs & light trucks', labelEs: 'Automóviles, SUVs y camionetas', values: ['Car', 'Light truck'] },
-  { id: 'trucks', label: 'Medium & heavy-duty trucks', labelEs: 'Camiones medianos y pesados', values: ['Diesel truck'] },
-  { id: 'heavy', label: 'Heavy equipment', labelEs: 'Maquinaria pesada', values: ['Heavy equipment'] },
-  { id: 'small', label: 'Small engines & light equipment', labelEs: 'Motores pequeños y equipo ligero', values: ['Light equipment'] },
-  { id: 'marine', label: 'Boats & marine equipment', labelEs: 'Embarcaciones y equipo marino', values: ['Boat'] },
-  { id: 'powersports', label: 'Motorcycles, ATVs & quads', labelEs: 'Motocicletas, ATVs y cuatrimotos', values: ['Motorcycle', 'ATV / Quad'] },
-  { id: 'electrified', label: 'Hybrid & electric vehicles', labelEs: 'Vehículos híbridos y eléctricos', values: ['Hybrid vehicle', 'Electric vehicle'] },
+  { id: 'light', label: 'Cars, SUVs & light pickup trucks', labelEs: 'Automóviles, SUVs y camionetas pickup livianas', description: 'Passenger vehicles such as sedans, minivans and half-ton pickups.', descriptionEs: 'Vehículos de pasajeros como sedanes, minivanes y pickups de media tonelada.', values: ['Car', 'Light truck'] },
+  { id: 'trucks', label: 'Medium & heavy-duty trucks', labelEs: 'Camiones medianos y pesados', description: 'Commercial, box, dump and tractor-trailer trucks.', descriptionEs: 'Camiones comerciales, de caja, volquetas y tractocamiones.', values: ['Diesel truck'] },
+  { id: 'heavy', label: 'Construction & earthmoving equipment', labelEs: 'Maquinaria de construcción y movimiento de tierra', description: 'Excavators, loaders, skid steers, backhoes and similar machinery.', descriptionEs: 'Excavadoras, cargadores, minicargadores, retroexcavadoras y maquinaria similar.', values: ['Heavy equipment'] },
+  { id: 'small', label: 'Small engines & light equipment', labelEs: 'Motores pequeños y equipo ligero', description: 'Generators, pressure washers, lawn equipment and similar machines.', descriptionEs: 'Generadores, hidrolavadoras, equipo de jardín y máquinas similares.', values: ['Light equipment'] },
+  { id: 'marine', label: 'Boats & marine equipment', labelEs: 'Embarcaciones y equipo marino', description: 'Recreational boats and their mechanical systems.', descriptionEs: 'Botes recreativos y sus sistemas mecánicos.', values: ['Boat'] },
+  { id: 'powersports', label: 'Motorcycles & off-road vehicles', labelEs: 'Motocicletas y vehículos todo terreno', description: 'Motorcycles, ATVs, four-wheelers and quads.', descriptionEs: 'Motocicletas, vehículos ATV, four-wheelers y cuatrimotos.', values: ['Motorcycle', 'ATV / Quad'] },
+  { id: 'electrified', label: 'Hybrid & electric vehicles', labelEs: 'Vehículos híbridos y eléctricos', description: 'Vehicles with high-voltage hybrid or fully electric systems.', descriptionEs: 'Vehículos con sistemas híbridos de alto voltaje o totalmente eléctricos.', values: ['Hybrid vehicle', 'Electric vehicle'] },
 ];
 
 const specialtyGroupCopy = {
   general: { labelEs: 'Mecánica automotriz general', description: 'Core mechanical systems for cars and light trucks.', descriptionEs: 'Sistemas mecánicos principales de automóviles y camionetas.' },
   electrical: { labelEs: 'Electricidad, electrónica y diagnóstico', description: 'Electrical faults, scan tools, starting and charging systems.', descriptionEs: 'Fallas eléctricas, escáner, arranque y sistemas de carga.' },
   propulsion: { labelEs: 'Combustible y sistemas de propulsión', description: 'Gasoline, diesel, hybrid and electric power systems.', descriptionEs: 'Sistemas de gasolina, diésel, híbridos y eléctricos.' },
-  specialized: { labelEs: 'Trabajo móvil y especializado', description: 'Roadside, marine, equipment and specialty vehicle work.', descriptionEs: 'Asistencia, embarcaciones, equipos y vehículos especializados.' },
+  specialized: { labelEs: 'Servicios adicionales y equipos especializados', description: 'Roadside assistance, towing or transport, marine work and specialized equipment.', descriptionEs: 'Asistencia en carretera, remolque o traslado, trabajo marino y equipos especializados.' },
 };
 
 const specialtyGroupIcons = { general: Wrench, electrical: Zap, propulsion: Fuel, specialized: LifeBuoy };
@@ -81,11 +82,12 @@ const specialtyGroupIcons = { general: Wrench, electrical: Zap, propulsion: Fuel
 const spanishOptions = {
   Monday: 'Lunes', Tuesday: 'Martes', Wednesday: 'Miércoles', Thursday: 'Jueves', Friday: 'Viernes', Saturday: 'Sábado', Sunday: 'Domingo',
   English: 'Inglés', Spanish: 'Español', Car: 'Automóvil', 'Light truck': 'Camioneta', 'Diesel truck': 'Camión diésel',
-  'Heavy equipment': 'Maquinaria pesada', 'Light equipment': 'Equipo ligero', Boat: 'Embarcación', Motorcycle: 'Motocicleta',
+  'Heavy equipment': 'Maquinaria de construcción y movimiento de tierra', 'Light equipment': 'Equipo ligero', Boat: 'Embarcación', Motorcycle: 'Motocicleta',
+  'ATV / Quad': 'Vehículo todo terreno (ATV / four-wheeler / cuatrimoto)',
   'Hybrid vehicle': 'Vehículo híbrido', 'Electric vehicle': 'Vehículo eléctrico', Cash: 'Efectivo', Card: 'Tarjeta', Check: 'Cheque', Other: 'Otro',
   Diagnostics: 'Diagnóstico', 'Mechanical repair': 'Reparación mecánica', 'Electrical repair': 'Reparación eléctrica',
   'No-start help': 'Ayuda para vehículo que no enciende', Brakes: 'Frenos', 'Roadside assistance': 'Asistencia en carretera',
-  'Car dolly towing': 'Remolque con car dolly', Gasoline: 'Gasolina', Hybrid: 'Híbrido', Electric: 'Eléctrico',
+  'Car dolly towing': 'Remolque o traslado a un lugar de reparación (con equipo legal)', Gasoline: 'Gasolina', Hybrid: 'Híbrido', Electric: 'Eléctrico',
   Yes: 'Sí', No: 'No', Unknown: 'No se sabe', Immediate: 'Inmediata', Scheduled: 'Programada',
   'General automotive mechanics': 'Mecánica automotriz general', Electromechanics: 'Electromecánica',
   'Electrical diagnostics': 'Diagnóstico eléctrico', 'Computer diagnostics': 'Diagnóstico computarizado',
@@ -106,8 +108,16 @@ const spanishOptions = {
   'Starting systems': 'Sistemas de arranque', 'No-start diagnostics': 'Diagnóstico de vehículo que no enciende',
   'Gasoline engine systems': 'Sistemas de motores a gasolina', 'Light vehicle diesel': 'Diésel para vehículos livianos',
   'Medium/heavy diesel': 'Diésel mediano y pesado', 'Boat & marine mechanics': 'Mecánica de embarcaciones',
-  'Motorcycle, ATV & quad mechanics': 'Mecánica de motocicletas, ATVs y cuatrimotos',
-  'Small engines & equipment': 'Motores pequeños y equipo', 'Heavy equipment mechanics': 'Mecánica de maquinaria pesada',
+  'Motorcycle, ATV & quad mechanics': 'Mecánica de motocicletas y vehículos todo terreno (ATV / cuatrimotos)',
+  'Small engines & equipment': 'Motores pequeños y equipo', 'Heavy equipment mechanics': 'Mecánica de construcción y movimiento de tierra',
+};
+
+const englishSpecialtyLabels = {
+  'ATV / Quad': 'Off-road vehicle (ATV / four-wheeler / quad)',
+  'Heavy equipment': 'Construction & earthmoving equipment',
+  'Car dolly towing': 'Towing or transport to a repair location (with legal equipment)',
+  'Motorcycle, ATV & quad mechanics': 'Motorcycle & off-road vehicle mechanics (ATVs / four-wheelers / quads)',
+  'Heavy equipment mechanics': 'Construction & earthmoving equipment mechanics',
 };
 
 function tx(lang, en, es) {
@@ -115,7 +125,7 @@ function tx(lang, en, es) {
 }
 
 function optionLabel(lang, value) {
-  return lang === 'es' ? spanishOptions[value] || value : value;
+  return lang === 'es' ? spanishOptions[value] || value : englishSpecialtyLabels[value] || value;
 }
 
 function Field({ label, children, required, hint, fieldKey, invalid = false, error, className = '' }) {
@@ -268,7 +278,7 @@ function GroupedSpecialtySelector({ lang, values, onChange, invalid = false, err
   return (
     <fieldset className={`grouped-specialties full ${invalid ? 'field-invalid' : ''}`} data-field="specialties">
       <legend>{tx(lang, 'Services you can verify', 'Servicios que puedes comprobar')} <b>*</b></legend>
-      <p className="form-help">{tx(lang, 'Open a category and select only work you can support with a video or certificate.', 'Abre una categoría y selecciona únicamente trabajos que puedas respaldar con un video o certificado.')}</p>
+      <p className="form-help">{tx(lang, 'Every CarDaddy request begins as a mobile, on-site visit. Open a category and select only the work you can support with a required video; certificates are optional supporting evidence.', 'Toda solicitud de CarDaddy comienza como una visita móvil en sitio. Abre una categoría y selecciona únicamente trabajos que puedas respaldar con un video obligatorio; los certificados son evidencia adicional opcional.')}</p>
       <div className="specialty-groups">
         {specialtyGroups.map((group) => {
           const copy = specialtyGroupCopy[group.id];
@@ -303,13 +313,13 @@ function VehicleCategorySelector({ lang, values, onChange, invalid = false, erro
     : values.filter((value) => !category.values.includes(value)));
   return (
     <fieldset className={`vehicle-category-selector full ${invalid ? 'field-invalid' : ''}`} data-field="vehicle_types_served">
-      <legend>{tx(lang, 'Vehicles and equipment you work on', 'Vehículos y equipos que atiendes')} <b>*</b></legend>
-      <p className="form-help">{tx(lang, 'Fuel and propulsion specialties are selected in the section above.', 'Las especialidades de combustible y propulsión se seleccionan en la sección anterior.')}</p>
+      <legend>{tx(lang, 'Types of vehicles or equipment you can diagnose and repair', 'Tipos de vehículos o equipos que puedes diagnosticar y reparar')} <b>*</b></legend>
+      <p className="form-help">{tx(lang, 'Select only categories for which you have the experience and tools. Fuel and propulsion specialties are selected above.', 'Selecciona únicamente categorías para las que tengas experiencia y herramientas. Las especialidades de combustible y propulsión se seleccionan arriba.')}</p>
       <div className="vehicle-category-grid">
         {providerVehicleCategories.map((category) => <label className="vehicle-category-option" key={category.id}>
           <input type="checkbox" checked={category.values.every((value) => values.includes(value))} onChange={(event) => toggleCategory(category, event.target.checked)} />
           <CarFront size={18} />
-          <span>{lang === 'es' ? category.labelEs : category.label}</span>
+          <span><strong>{lang === 'es' ? category.labelEs : category.label}</strong><small>{tx(lang, category.description, category.descriptionEs)}</small></span>
         </label>)}
       </div>
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
@@ -828,10 +838,19 @@ function ProviderApplicationPage({ lang, shell }) {
             <span><b>2</b>{tx(lang, 'Arrive physically at the service location.', 'Llega físicamente al lugar del servicio.')}</span>
             <span><b>3</b>{tx(lang, 'Collect the agreed inspection fee before beginning the inspection.', 'Cobra la tarifa de inspección acordada antes de comenzar la inspección.')}</span>
           </div>
+          <div className="provider-report-policy">
+            <div><ShieldCheck size={20} /><span><strong>{tx(lang, 'Verified customer reports protect the network', 'Los reportes verificados de clientes protegen la red')}</strong><small>{tx(lang, 'A report must be connected to a real CarDaddy case and reviewed before it counts.', 'El reporte debe estar vinculado a un caso real de CarDaddy y revisarse antes de contabilizarse.')}</small></span></div>
+            <ol>
+              <li><b>1</b><span><strong>{tx(lang, 'First verified report', 'Primer reporte verificado')}</strong><small>{tx(lang, 'Formal warning and placement at the end of the matching queue.', 'Advertencia formal y traslado al final de la cola de asignación.')}</small></span></li>
+              <li><b>2</b><span><strong>{tx(lang, 'Second verified report', 'Segundo reporte verificado')}</strong><small>{tx(lang, 'Temporary suspension while eligibility is reviewed.', 'Suspensión temporal mientras se revisa la elegibilidad.')}</small></span></li>
+              <li><b>3</b><span><strong>{tx(lang, 'Third verified report', 'Tercer reporte verificado')}</strong><small>{tx(lang, 'Permanent removal from the CarDaddy provider network.', 'Eliminación permanente de la red de proveedores CarDaddy.')}</small></span></li>
+            </ol>
+            <p>{tx(lang, 'Requests for advance deposits, travel or mobilization fees must be reported. Serious fraud or safety incidents may be suspended during review.', 'Las solicitudes de depósitos, tarifas de viaje o movilización por adelantado deben reportarse. Los incidentes graves de fraude o seguridad pueden suspenderse mientras se investigan.')}</p>
+          </div>
           <p className="provider-payment-warning">{tx(lang, 'If you are not willing to work under this payment model, please do not submit an application.', 'Si no estás dispuesto a trabajar bajo esta modalidad de cobro, por favor no llenes la solicitud.')}</p>
           <label className="provider-payment-acceptance">
             <input type="checkbox" checked={form.no_advance_fee_acknowledged} onChange={(event) => set('no_advance_fee_acknowledged', event.target.checked)} />
-            <span><strong>{tx(lang, 'I understand and agree', 'Entiendo y acepto')}</strong><small>{tx(lang, 'I will follow this no-advance-payment policy for every CarDaddy request.', 'Cumpliré esta política de cero pagos por adelantado en cada solicitud de CarDaddy.')}</small></span>
+            <span><strong>{tx(lang, 'I understand and agree', 'Entiendo y acepto')}</strong><small>{tx(lang, 'I accept the no-advance-payment rule and the progressive consequences for verified customer reports.', 'Acepto la regla de cero pagos por adelantado y las consecuencias progresivas por reportes verificados de clientes.')}</small></span>
           </label>
         </div>
       </section>
@@ -855,6 +874,7 @@ function ProviderApplicationPage({ lang, shell }) {
         {step === 2 ? <div className="form-grid" data-wizard-step="2">
           <GroupedSpecialtySelector lang={lang} values={form.specialties} onChange={setSpecialties} invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
           <VehicleCategorySelector lang={lang} values={form.vehicle_types_served} onChange={(value) => set('vehicle_types_served', value)} invalid={Boolean(fieldErrors.vehicle_types_served)} error={fieldErrors.vehicle_types_served} />
+          <div className="service-pathway-note full"><Route size={20} /><div><strong>{tx(lang, 'Inspection first; repair on site whenever practical', 'Primero se inspecciona; se repara en sitio cuando sea práctico')}</strong><span>{tx(lang, 'If the repair cannot be completed safely on site, a provider who selected towing or transport may offer to move the vehicle to a shop or repair location. The customer and provider agree directly on that separate service and price after arrival.', 'Si la reparación no puede completarse de forma segura en sitio, un proveedor que haya seleccionado remolque o traslado puede ofrecer mover el vehículo a un taller o lugar de reparación. El cliente y el proveedor acuerdan directamente ese servicio adicional y su precio después de la llegada.')}</span></div></div>
           <div className="inspection-fee-field full">
           <Field
             label={tx(lang, 'Minimum on-site inspection fee (USD)', 'Tarifa mínima de inspección en sitio (USD)')}
