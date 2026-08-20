@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --keyboard-inset: 0px;
   color: #101418;
   background: #f7f8f6;
   font-synthesis: none;
@@ -16,6 +17,21 @@
 body {
   margin: 0;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-padding-block: 88px calc(var(--keyboard-inset) + 24px);
+}
+
+input,
+select,
+textarea,
+[contenteditable="true"] {
+  scroll-margin-block: 88px calc(var(--keyboard-inset) + 24px);
+}
+
+html.keyboard-open body {
+  padding-bottom: var(--keyboard-inset);
 }
 
 a {
@@ -2557,6 +2573,11 @@ summary {
 .admin-main {
   overflow: auto;
   padding: 28px;
+  scroll-padding-block: 88px calc(var(--keyboard-inset) + 24px);
+}
+
+html.keyboard-open .admin-main {
+  padding-bottom: calc(28px + var(--keyboard-inset));
 }
 
 .dashboard-grid {

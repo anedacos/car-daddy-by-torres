@@ -39,6 +39,7 @@ import {
   mailTo,
   updateRecord,
 } from './lib/storage';
+import { installMobileKeyboardGuard } from './lib/mobile-keyboard';
 import { PlatformPage, getPlatformRoute } from './platform/PlatformPages';
 import { PlatformAdmin, platformAdminNav } from './platform/PlatformAdmin';
 import {
@@ -953,6 +954,7 @@ function Root() {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+  useEffect(() => installMobileKeyboardGuard(), []);
   if (isAdmin) return <AdminApp lang={lang} />;
   if (isVideos) return <VideosPage lang={lang} setLang={setLang} />;
   if (platformRoute) return <PlatformPage route={platformRoute} lang={lang} setLang={setLang} header={Header} footer={Footer} />;
