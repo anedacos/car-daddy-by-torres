@@ -15,7 +15,10 @@ import {
   isValidZipCode,
   isQualifiedOpportunity,
   maskContact,
+  nextScheduleRange,
+  normalizeScheduleRanges,
   rankCompatibleProviders,
+  validateScheduleRanges,
   validateUpload,
 } from '../src/platform/domain.js';
 
@@ -87,6 +90,17 @@ test('qualified opportunities require consent, geography, service, and an active
   assert.equal(isQualifiedOpportunity(serviceCase, provider), true);
   assert.equal(isQualifiedOpportunity({ ...serviceCase, state: 'Alabama' }, provider), false);
   assert.equal(isQualifiedOpportunity({ ...serviceCase, share_consent: false }, provider), false);
+});
+
+test('schedule ranges stay chronological and start after the previous range', () => {
+  const first = [{ start: '05:00', end: '19:00' }];
+  assert.deepEqual(nextScheduleRange(first), { start: '19:15', end: '20:15' });
+  assert.deepEqual(
+    normalizeScheduleRanges([...first, { start: '09:00', end: '07:00' }], 1, 'start', '09:00'),
+    [{ start: '05:00', end: '19:00' }, { start: '19:15', end: '20:15' }],
+  );
+  assert.deepEqual(validateScheduleRanges([{ start: '09:00', end: '07:00' }]), ['end_before_start']);
+  assert.deepEqual(validateScheduleRanges([{ start: '08:00', end: '12:00' }, { start: '11:00', end: '14:00' }]), ['overlapping_ranges']);
 });
 
 test('customer and provider payment methods must be compatible when both are captured', () => {

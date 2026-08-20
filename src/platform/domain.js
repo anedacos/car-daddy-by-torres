@@ -262,6 +262,87 @@ export function copyScheduleToDays(schedule, sourceDay, selectedDays) {
   return next;
 }
 
+export function timeToMinutes(value = '') {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null;
+  const [hour, minute] = value.split(':').map(Number);
+  if (hour > 23 || minute > 59) return null;
+  return (hour * 60) + minute;
+}
+
+/** @param {number} value */
+export function minutesToTime(value) {
+  const minutes = Math.max(0, Math.min(23 * 60 + 45, Math.round(Number(value) / 15) * 15));
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** @param {Array<{start: string, end: string}>} ranges */
+export function nextScheduleRange(ranges = []) {
+  const lastEnd = timeToMinutes(ranges[ranges.length - 1]?.end);
+  if (lastEnd === null || lastEnd > (22 * 60 + 30)) return { start: '', end: '' };
+  const start = lastEnd + 15;
+  return { start: minutesToTime(start), end: minutesToTime(start + 60) };
+}
+
+/**
+ * @param {Array<{start: string, end: string}>} ranges
+ * @param {number} changedIndex
+ * @param {'start' | 'end'} key
+ * @param {string} value
+ */
+export function normalizeScheduleRanges(ranges = [], changedIndex = 0, key = 'start', value = '') {
+  const next = ranges.map((range) => ({ ...range }));
+  if (!next[changedIndex]) next[changedIndex] = { start: '', end: '' };
+  next[changedIndex][key] = value;
+
+  next.forEach((range, index) => {
+    const previousEnd = index ? timeToMinutes(next[index - 1].end) : null;
+    let start = timeToMinutes(range.start);
+    let end = timeToMinutes(range.end);
+
+    if (start !== null && previousEnd !== null && start < previousEnd + 15) {
+      if (previousEnd + 15 > 23 * 60 + 45) {
+        range.start = '';
+        range.end = '';
+        return;
+      }
+      range.start = minutesToTime(previousEnd + 15);
+      start = timeToMinutes(range.start);
+    }
+
+    if (start !== null && end !== null && end <= start) {
+      if (start >= 23 * 60 + 45) range.end = '';
+      else range.end = minutesToTime(Math.min(start + 60, 23 * 60 + 45));
+      end = timeToMinutes(range.end);
+    }
+
+    if (end !== null && index < next.length - 1) {
+      const followingStart = timeToMinutes(next[index + 1].start);
+      if (followingStart !== null && followingStart < end + 15) {
+        next[index + 1].start = end + 15 <= 23 * 60 + 45 ? minutesToTime(end + 15) : '';
+      }
+    }
+  });
+  return next;
+}
+
+/** @param {Array<{start: string, end: string}>} ranges */
+export function validateScheduleRanges(ranges = []) {
+  if (!ranges.length) return ['missing_hours'];
+  /** @type {string[]} */
+  const issues = [];
+  ranges.forEach((range, index) => {
+    const start = timeToMinutes(range.start);
+    const end = timeToMinutes(range.end);
+    if (start === null || end === null) issues.push('missing_hours');
+    else if (end <= start) issues.push('end_before_start');
+    if (index && start !== null) {
+      const previousEnd = timeToMinutes(ranges[index - 1].end);
+      if (previousEnd !== null && start < previousEnd + 15) issues.push('overlapping_ranges');
+    }
+  });
+  return [...new Set(issues)];
+}
+
 /** @typedef {{ type: string, size: number, name?: string }} UploadCandidate */
 /** @typedef {Record<string, any>} PlatformRecord */
 

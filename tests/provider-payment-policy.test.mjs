@@ -15,6 +15,10 @@ test('provider intake gates the form behind the no-advance-payment acknowledgmen
   assert.match(source, /Second verified report/);
   assert.match(source, /Third verified report/);
   assert.match(source, /Permanent removal from the CarDaddy provider network/);
+  assert.match(source, /Repeat this schedule/);
+  assert.match(source, /Copy .*schedule to:/);
+  assert.doesNotMatch(source, /Available for emergencies/);
+  assert.doesNotMatch(source, /Available at night/);
   assert.doesNotMatch(source, /minimum_mobilization_fee:/);
 });
 

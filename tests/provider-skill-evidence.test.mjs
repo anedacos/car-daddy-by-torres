@@ -4,6 +4,8 @@ import test from 'node:test';
 import { validateProviderSkillEvidence } from '../src/platform/domain.js';
 
 const migrationPath = new URL('../supabase/migrations/20260816230000_provider_skill_evidence.sql', import.meta.url);
+const mediaConsentMigrationPath = new URL('../supabase/migrations/20260820040000_required_provider_media_consent.sql', import.meta.url);
+const pagesPath = new URL('../src/platform/PlatformPages.jsx', import.meta.url);
 
 test('requires tools and complete video evidence for every declared specialty', () => {
   const issues = validateProviderSkillEvidence({
@@ -50,4 +52,14 @@ test('database submission independently enforces skill videos and tool photos', 
   assert.match(migration, /skill_evidence_video/);
   assert.match(migration, /photo of provider-owned tools is required/);
   assert.match(migration, /Missing required work video and details for specialty/);
+});
+
+test('provider media permission is mandatory in the form and database', async () => {
+  const [source, migration] = await Promise.all([
+    readFile(pagesPath, 'utf8'),
+    readFile(mediaConsentMigrationPath, 'utf8'),
+  ]);
+  assert.match(source, /Required permission to verify and promote your work/);
+  assert.match(source, /!form\.media_publicity_consent/);
+  assert.match(migration, /check \(media_publicity_consent = true\) not valid/);
 });

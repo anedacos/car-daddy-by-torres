@@ -25,6 +25,16 @@ function getEditableElement(target) {
   return element;
 }
 
+function getScrollableParent(element) {
+  let current = element.parentElement;
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    if (/(auto|scroll)/.test(style.overflowY) && current.scrollHeight > current.clientHeight) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 export function installMobileKeyboardGuard() {
   const root = document.documentElement;
   const viewport = window.visualViewport;
@@ -46,27 +56,33 @@ export function installMobileKeyboardGuard() {
     root.classList.toggle('keyboard-open', keyboardInset > 100);
   };
 
-  const keepFocusedFieldVisible = () => {
+  const keepFocusedFieldVisible = (forceUpperPosition = false) => {
     syncKeyboardState();
     const focused = getEditableElement(document.activeElement);
     if (!focused) return;
 
     const viewportTop = viewport?.offsetTop ?? 0;
-    const viewportBottom = viewportTop + currentViewportHeight();
+    const viewportHeight = currentViewportHeight();
+    const viewportBottom = viewportTop + viewportHeight;
     const safeTop = viewportTop + 88;
     const safeBottom = viewportBottom - 24;
     const rect = focused.getBoundingClientRect();
+    const targetTop = viewportTop + Math.min(170, Math.max(112, viewportHeight * 0.2));
 
-    if (rect.top < safeTop || rect.bottom > safeBottom) {
-      focused.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    root.style.setProperty('--keyboard-safe-top', `${Math.round(targetTop)}px`);
+    if (rect.top < safeTop || rect.bottom > safeBottom || (forceUpperPosition && rect.top > targetTop + 20)) {
+      const scrollParent = getScrollableParent(focused);
+      const correction = rect.top - targetTop;
+      if (scrollParent) scrollParent.scrollTop += correction;
+      else window.scrollBy({ top: correction, left: 0, behavior: 'auto' });
     }
   };
 
-  const scheduleVisibilityCheck = (delay = 0) => {
+  const scheduleVisibilityCheck = (delay = 0, forceUpperPosition = false) => {
     const timer = window.setTimeout(() => {
       timers.delete(timer);
       window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(keepFocusedFieldVisible);
+      frame = window.requestAnimationFrame(() => keepFocusedFieldVisible(forceUpperPosition));
     }, delay);
     timers.add(timer);
   };
@@ -74,12 +90,13 @@ export function installMobileKeyboardGuard() {
   const handleFocus = (event) => {
     if (!getEditableElement(event.target)) return;
     syncKeyboardState();
-    scheduleVisibilityCheck(60);
-    scheduleVisibilityCheck(260);
-    scheduleVisibilityCheck(520);
+    scheduleVisibilityCheck(60, true);
+    scheduleVisibilityCheck(280, true);
+    scheduleVisibilityCheck(620, true);
+    scheduleVisibilityCheck(950, true);
   };
 
-  const handleViewportChange = () => scheduleVisibilityCheck();
+  const handleViewportChange = () => scheduleVisibilityCheck(0, true);
   const handleBlur = () => scheduleVisibilityCheck(180);
   const handleOrientationChange = () => {
     const timer = window.setTimeout(() => {
@@ -109,5 +126,6 @@ export function installMobileKeyboardGuard() {
     window.cancelAnimationFrame(frame);
     root.classList.remove('keyboard-open');
     root.style.removeProperty('--keyboard-inset');
+    root.style.removeProperty('--keyboard-safe-top');
   };
 }

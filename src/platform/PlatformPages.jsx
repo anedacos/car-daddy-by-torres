@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  Camera,
   CarFront,
   Check,
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   Copy,
   FileCheck2,
   Fuel,
+  Images,
   LifeBuoy,
   LockKeyhole,
   MailCheck,
@@ -22,6 +24,7 @@ import {
   Trash2,
   Upload,
   UserRoundCheck,
+  Video,
   Wrench,
   Zap,
 } from 'lucide-react';
@@ -39,8 +42,11 @@ import {
   isValidUsPhone,
   isValidZipCode,
   launchStates,
+  nextScheduleRange,
+  normalizeScheduleRanges,
   specialties,
   specialtyGroups,
+  validateScheduleRanges,
   validateProviderSkillEvidence,
 } from './domain';
 import {
@@ -166,10 +172,7 @@ function CompactAutocompleteField({ label, value, onChange, suggestions, hint, s
           value={value}
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
           onChange={(event) => { onChange(event.target.value); setFocused(true); }}
-          onFocus={(event) => {
-            setFocused(true);
-            window.setTimeout(() => event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
-          }}
+          onFocus={() => setFocused(true)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') setFocused(false);
             if (event.key === 'Enter' && showSuggestions) {
@@ -205,9 +208,18 @@ function CityAutocompleteField({ lang, state, value, onChange, fieldKey, invalid
 }
 
 function scrollToWizardProgress() {
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.querySelector('[data-wizard-progress]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }));
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  const alignProgress = () => {
+    const progress = document.querySelector('[data-wizard-progress]');
+    if (!progress) return;
+    const headerHeight = document.querySelector('.site-header')?.getBoundingClientRect().height || 68;
+    const top = window.scrollY + progress.getBoundingClientRect().top - headerHeight - 14;
+    const scrollRoot = document.scrollingElement || document.documentElement;
+    scrollRoot.scrollTop = Math.max(0, top);
+  };
+  requestAnimationFrame(() => requestAnimationFrame(alignProgress));
+  window.setTimeout(alignProgress, 260);
+  window.setTimeout(alignProgress, 720);
 }
 
 function PageIntro({ eyebrow, title, body }) {
@@ -380,23 +392,39 @@ function TimeSelect({ label, value, onChange, lang }) {
 }
 
 function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = false, error }) {
-  const [copiedFrom, setCopiedFrom] = useState('');
+  const [copySource, setCopySource] = useState('');
+  const [copyTargets, setCopyTargets] = useState([]);
+  const [copyResult, setCopyResult] = useState(null);
+  const [adjustedDay, setAdjustedDay] = useState('');
   const update = (day, range, key, value) => {
-    const next = { ...schedule, [day]: [...(schedule[day] || [{ start: '', end: '' }])] };
-    next[day][range] = { ...next[day][range], [key]: value };
+    const currentRanges = schedule[day]?.length ? schedule[day] : [{ start: '', end: '' }];
+    const rawRanges = currentRanges.map((item, index) => index === range ? { ...item, [key]: value } : { ...item });
+    const normalizedRanges = normalizeScheduleRanges(currentRanges, range, key, value);
+    const next = { ...schedule, [day]: normalizedRanges };
+    setAdjustedDay(JSON.stringify(rawRanges) === JSON.stringify(normalizedRanges) ? '' : day);
     onChange(next);
   };
-  const addRange = (day) => onChange({ ...schedule, [day]: [...(schedule[day] || [{ start: '', end: '' }]), { start: '', end: '' }] });
+  const addRange = (day) => {
+    const ranges = schedule[day] || [{ start: '', end: '' }];
+    onChange({ ...schedule, [day]: [...ranges, nextScheduleRange(ranges)] });
+  };
   const removeRange = (day, range) => onChange({ ...schedule, [day]: (schedule[day] || []).filter((_, index) => index !== range) });
-  const copyToSelectedDays = (sourceDay) => {
-    onChange(copyScheduleToDays(schedule, sourceDay, selectedDays));
-    setCopiedFrom(sourceDay);
+  const openCopyPanel = (sourceDay) => {
+    setCopySource(copySource === sourceDay ? '' : sourceDay);
+    setCopyTargets([]);
+  };
+  const toggleCopyTarget = (day) => setCopyTargets((current) => current.includes(day) ? current.filter((value) => value !== day) : [...current, day]);
+  const copyToChosenDays = () => {
+    onChange(copyScheduleToDays(schedule, copySource, [copySource, ...copyTargets]));
+    setCopyResult({ source: copySource, targets: [...copyTargets] });
+    setCopySource('');
+    setCopyTargets([]);
   };
   if (!selectedDays.length) return <p className="form-help full">{tx(lang, 'Select at least one available day.', 'Selecciona al menos un día disponible.')}</p>;
   return (
     <div className={`schedule-editor full ${invalid ? 'field-invalid' : ''}`} data-field="availability_schedule">
       <div className="schedule-heading">
-        <div><strong>{tx(lang, 'Working hours', 'Horario de trabajo')}</strong><small>{tx(lang, 'Set one day, then copy that schedule to every other selected day.', 'Configura un día y luego copia ese horario a los demás días seleccionados.')}</small></div>
+        <div><strong>{tx(lang, 'Working hours you commit to respect', 'Horarios de trabajo que te comprometes a respetar')}</strong><small>{tx(lang, 'Use a second same-day range for a meal or break. Overnight ranges are not enabled during the beta.', 'Usa un segundo bloque del mismo día para separar comida o descanso. Los horarios que cruzan al día siguiente no están habilitados durante la beta.')}</small></div>
       </div>
       {selectedDays.map((day) => (
         <div className="schedule-row" key={day}>
@@ -405,9 +433,9 @@ function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = fals
             {selectedDays.length > 1 ? <button
               type="button"
               className="copy-schedule"
-              disabled={!(schedule[day]?.[0]?.start && schedule[day]?.[0]?.end)}
-              onClick={() => copyToSelectedDays(day)}
-            ><Copy size={15} /> {tx(lang, 'Copy to selected days', 'Copiar a días seleccionados')}</button> : null}
+              disabled={validateScheduleRanges(schedule[day] || []).length > 0}
+              onClick={() => openCopyPanel(day)}
+            ><Copy size={15} /> {tx(lang, 'Repeat this schedule', 'Repetir este horario')}</button> : null}
           </div>
           <div className="day-ranges">
             {(schedule[day]?.length ? schedule[day] : [{ start: '', end: '' }]).map((rangeValue, range) => (
@@ -417,22 +445,50 @@ function ScheduleEditor({ selectedDays, schedule, onChange, lang, invalid = fals
                 {range > 0 ? <button type="button" className="range-remove" title={tx(lang, 'Remove time range', 'Eliminar horario')} aria-label={tx(lang, 'Remove time range', 'Eliminar horario')} onClick={() => removeRange(day, range)}><Trash2 size={17} /></button> : null}
               </div>
             ))}
-            {(schedule[day]?.length || 1) < 2 ? <button type="button" className="add-range" onClick={() => addRange(day)}><Plus size={16} /> {tx(lang, 'Add another time range', 'Agregar otro horario')}</button> : null}
+            {(schedule[day]?.length || 1) < 2 ? <button type="button" className="add-range" disabled={validateScheduleRanges(schedule[day] || []).length > 0} onClick={() => addRange(day)}><Plus size={16} /> {tx(lang, 'Add meal / break split', 'Agregar pausa para comida / descanso')}</button> : null}
+            {adjustedDay === day ? <small className="schedule-adjusted" role="status">{tx(lang, 'Time adjusted automatically to keep the ranges in chronological order.', 'Horario ajustado automáticamente para mantener los bloques en orden cronológico.')}</small> : null}
           </div>
+          {copySource === day ? <div className="schedule-copy-panel">
+            <strong>{tx(lang, `Copy ${day}'s schedule to:`, `Copiar el horario de ${optionLabel(lang, day)} a:`)}</strong>
+            <div>{selectedDays.filter((target) => target !== day).map((target) => <label key={target}><input type="checkbox" checked={copyTargets.includes(target)} onChange={() => toggleCopyTarget(target)} /> <span>{optionLabel(lang, target)}</span></label>)}</div>
+            <div className="schedule-copy-actions"><button type="button" className="btn btn-small btn-muted" onClick={() => setCopySource('')}>{tx(lang, 'Cancel', 'Cancelar')}</button><button type="button" className="btn btn-small btn-primary" disabled={!copyTargets.length} onClick={copyToChosenDays}><Copy size={15} /> {tx(lang, `Copy to ${copyTargets.length || ''} day${copyTargets.length === 1 ? '' : 's'}`, `Copiar a ${copyTargets.length || ''} día${copyTargets.length === 1 ? '' : 's'}`)}</button></div>
+          </div> : null}
         </div>
       ))}
-      {copiedFrom ? <p className="schedule-copy-status" role="status"><Check size={15} /> {tx(lang, `${copiedFrom} schedule copied to the other selected days.`, `Horario de ${optionLabel(lang, copiedFrom)} copiado a los demás días seleccionados.`)}</p> : null}
+      {copyResult ? <p className="schedule-copy-status" role="status"><Check size={15} /> {tx(lang, `${copyResult.source}'s schedule copied to ${copyResult.targets.join(', ')}.`, `Horario de ${optionLabel(lang, copyResult.source)} copiado a ${copyResult.targets.map((day) => optionLabel(lang, day)).join(', ')}.`)}</p> : null}
+      <div className="availability-policy-note"><ShieldCheck size={19} /><p>{tx(lang, 'During published hours, respond to each opportunity within 30 minutes by accepting or declining it. If there is no response, CarDaddy moves to the next provider and records the missed response. Repeated verified availability failures follow the same warning, temporary suspension and permanent removal sequence.', 'Durante los horarios publicados, responde cada oportunidad dentro de 30 minutos aceptándola o rechazándola. Si no respondes, CarDaddy pasa al siguiente proveedor y registra la falta de respuesta. Los incumplimientos verificados y repetidos de disponibilidad siguen la misma secuencia de advertencia, suspensión temporal y eliminación permanente.')}</p></div>
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
     </div>
   );
 }
 
-function FilePicker({ label, accept, multiple = true, onChange, hint, required = false, fieldKey, invalid = false, error, files = [] }) {
+function FilePicker({ label, accept, multiple = true, onChange, hint, required = false, fieldKey, invalid = false, error, files = [], lang = document.documentElement.lang }) {
+  const galleryId = React.useId();
+  const cameraId = React.useId();
+  const isVideo = accept.includes('video/');
+  const isImage = accept.includes('image/');
+  const appendFiles = (selected) => {
+    const combined = [...files, ...selected];
+    const unique = combined.filter((file, index) => combined.findIndex((candidate) => `${candidate.name}-${candidate.size}-${candidate.lastModified || 0}` === `${file.name}-${file.size}-${file.lastModified || 0}`) === index);
+    onChange(unique);
+  };
+  const handleFiles = (event) => {
+    appendFiles(Array.from(event.target.files || []));
+    event.target.value = '';
+  };
+  const removeFile = (index) => onChange(files.filter((_, fileIndex) => fileIndex !== index));
   return (
-    <Field label={label} hint={hint} required={required} fieldKey={fieldKey} invalid={invalid} error={error}>
-      <span className="file-picker"><Upload size={18} /><input type="file" accept={accept} multiple={multiple} onChange={(event) => onChange(Array.from(event.target.files || []))} /></span>
-      {files.length ? <span className="loaded-file-list">{files.map((file) => <span key={`${file.name}-${file.size}`}><FileCheck2 size={14} />{file.name}</span>)}</span> : null}
-    </Field>
+    <div className={`field ${invalid ? 'field-invalid' : ''}`} data-field={fieldKey}>
+      <span>{label} {required ? <b>*</b> : null}</span>
+      <div className="file-picker-actions">
+        <input id={galleryId} className="visually-hidden-file" type="file" accept={accept} multiple={multiple} onChange={handleFiles} />
+        <label className="file-source-button" htmlFor={galleryId}>{isVideo ? <Video size={18} /> : isImage ? <Images size={18} /> : <Upload size={18} />}<span>{isVideo ? tx(lang, 'Choose videos', 'Elegir videos') : isImage ? tx(lang, 'Choose photos', 'Elegir fotos') : tx(lang, 'Choose files', 'Elegir archivos')}</span></label>
+        {isVideo || isImage ? <><input id={cameraId} className="visually-hidden-file" type="file" accept={isVideo ? 'video/*' : 'image/*'} capture="environment" onChange={handleFiles} /><label className="file-source-button camera" htmlFor={cameraId}><Camera size={18} /><span>{isVideo ? tx(lang, 'Record video', 'Grabar video') : tx(lang, 'Take photo', 'Tomar foto')}</span></label></> : null}
+      </div>
+      {hint ? <small>{hint}</small> : null}
+      {files.length ? <span className="loaded-file-list">{files.map((file, index) => <span key={`${file.name}-${file.size}-${index}`}><FileCheck2 size={14} /><span>{file.name}</span><button type="button" aria-label={tx(lang, `Remove ${file.name}`, `Eliminar ${file.name}`)} onClick={() => removeFile(index)}><Trash2 size={14} /></button></span>)}</span> : null}
+      {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
+    </div>
   );
 }
 
@@ -577,7 +633,7 @@ const demoProvider = {
   immediate_available: true,
   scheduled_available: true,
   night_available: false,
-  emergency_available: true,
+  emergency_available: false,
   minimum_inspection_fee: '75',
   payment_methods: ['Cash', 'Zelle', 'Cash App', 'Card'],
   no_advance_fee_acknowledged: true,
@@ -659,6 +715,9 @@ function ProviderApplicationPage({ lang, shell }) {
   const [confirmation, setConfirmation] = useState(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
+    if (step > 1) scrollToWizardProgress();
+  }, [step]);
+  useEffect(() => {
     if (!isDemoMode) return undefined;
     let active = true;
     Promise.all([
@@ -736,11 +795,8 @@ function ProviderApplicationPage({ lang, shell }) {
       });
     }
     if (step === 3 && form.available_days.length && !form.all_day_available) {
-      const missingHours = form.available_days.some((day) => {
-        const ranges = form.availability_schedule[day] || [];
-        return !ranges.length || ranges.some((range) => !range.start || !range.end);
-      });
-      if (missingHours) errors.availability_schedule = tx(lang, 'Add a start and end time for every selected day.', 'Agrega una hora de inicio y fin para cada día seleccionado.');
+      const invalidHours = form.available_days.some((day) => validateScheduleRanges(form.availability_schedule[day] || []).length > 0);
+      if (invalidHours) errors.availability_schedule = tx(lang, 'Complete every day with chronological, non-overlapping same-day hours.', 'Completa cada día con horarios del mismo día, cronológicos y sin bloques superpuestos.');
     }
     if (step === 3 && form.scheduled_available && form.availability_start_mode === 'Date' && !form.availability_start_date) {
       errors.availability_start_date = tx(lang, 'Choose the date when your availability begins.', 'Elige la fecha en que comienza tu disponibilidad.');
@@ -771,8 +827,8 @@ function ProviderApplicationPage({ lang, shell }) {
       };
       evidenceErrors[`skill_evidence_${index}`] = tx(lang, `Complete ${skill}: `, `Completa ${optionLabel(lang, skill)}: `) + issues.map((issue) => issueLabels[issue]).join(', ');
     });
-    if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged || !form.no_advance_fee_acknowledged) {
-      evidenceErrors.required_consents = tx(lang, 'Accept the required terms, payment policy, and independent-provider acknowledgement.', 'Acepta los términos requeridos, la política de cobro y la confirmación de proveedor independiente.');
+    if (!form.terms_accepted || !form.privacy_accepted || !form.independent_provider_acknowledged || !form.no_advance_fee_acknowledged || !form.media_publicity_consent) {
+      evidenceErrors.required_consents = tx(lang, 'Accept the required terms, payment policy, independent-provider acknowledgement, and media permission.', 'Acepta los términos requeridos, la política de cobro, la confirmación de proveedor independiente y el permiso de contenido.');
     }
     if (Object.keys(evidenceErrors).length) {
       showErrors(evidenceErrors);
@@ -863,7 +919,7 @@ function ProviderApplicationPage({ lang, shell }) {
               <li><b>2</b><span><strong>{tx(lang, 'Second verified report', 'Segundo reporte verificado')}</strong><small>{tx(lang, 'Temporary suspension while eligibility is reviewed.', 'Suspensión temporal mientras se revisa la elegibilidad.')}</small></span></li>
               <li><b>3</b><span><strong>{tx(lang, 'Third verified report', 'Tercer reporte verificado')}</strong><small>{tx(lang, 'Permanent removal from the CarDaddy provider network.', 'Eliminación permanente de la red de proveedores CarDaddy.')}</small></span></li>
             </ol>
-            <p>{tx(lang, 'Requests for advance deposits, travel or mobilization fees must be reported. Serious fraud or safety incidents may be suspended during review.', 'Las solicitudes de depósitos, tarifas de viaje o movilización por adelantado deben reportarse. Los incidentes graves de fraude o seguridad pueden suspenderse mientras se investigan.')}</p>
+            <p>{tx(lang, 'Requests for advance deposits, travel or mobilization fees must be reported. Verified repeated failures to respect published availability or respond during it follow the same sequence. Serious fraud or safety incidents may be suspended during review.', 'Las solicitudes de depósitos, tarifas de viaje o movilización por adelantado deben reportarse. Los incumplimientos verificados y repetidos de los horarios publicados o del deber de responder durante ellos siguen la misma secuencia. Los incidentes graves de fraude o seguridad pueden suspenderse mientras se investigan.')}</p>
           </div>
           <p className="provider-payment-warning">{tx(lang, 'If you are not willing to work under this payment model, please do not submit an application.', 'Si no estás dispuesto a trabajar bajo esta modalidad de cobro, por favor no llenes la solicitud.')}</p>
           <label className="provider-payment-acceptance">
@@ -910,9 +966,7 @@ function ProviderApplicationPage({ lang, shell }) {
           <div className="boolean-grid full">
             <BooleanChoice label={tx(lang, 'Available for new requests now', 'Disponible para nuevas solicitudes ahora')} description={tx(lang, 'CarDaddy may consider you for immediate requests.', 'CarDaddy puede considerarte para solicitudes inmediatas.')} checked={form.immediate_available} onChange={(value) => set('immediate_available', value)} />
             <BooleanChoice label={tx(lang, 'Accept scheduled appointments', 'Acepto citas programadas')} description={tx(lang, 'Customers can request a future date and time.', 'Los clientes pueden solicitar una fecha y hora futuras.')} checked={form.scheduled_available} onChange={(value) => set('scheduled_available', value)} />
-            <BooleanChoice label={tx(lang, 'Available at night', 'Disponible por la noche')} description={tx(lang, 'You choose the exact hours above.', 'Tú eliges las horas exactas arriba.')} checked={form.night_available} onChange={(value) => set('night_available', value)} />
-            <BooleanChoice label={tx(lang, 'Available for emergencies', 'Disponible para emergencias')} description={tx(lang, 'This does not require you to accept every request.', 'Esto no te obliga a aceptar todas las solicitudes.')} checked={form.emergency_available} onChange={(value) => set('emergency_available', value)} />
-            <BooleanChoice label={tx(lang, 'Available all day on selected days', 'Disponible todo el día en los días seleccionados')} description={tx(lang, 'Use this only when no start or end time is needed.', 'Úsalo solo cuando no necesites una hora de inicio o fin.')} checked={form.all_day_available} onChange={(value) => set('all_day_available', value)} />
+            <BooleanChoice label={tx(lang, 'Available all day on selected days', 'Disponible todo el día en los días seleccionados')} description={tx(lang, 'Use this only if you can monitor and respond to opportunities throughout those days. A missed 30-minute response window is recorded.', 'Úsalo solo si puedes revisar y responder oportunidades durante todo ese día. Una respuesta no atendida dentro de 30 minutos queda registrada.')} checked={form.all_day_available} onChange={(value) => set('all_day_available', value)} />
           </div>
           {form.scheduled_available ? <div className="availability-start full">
             <CalendarDays size={22} />
@@ -929,7 +983,7 @@ function ProviderApplicationPage({ lang, shell }) {
         </div> : null}
 
         {step === 4 ? <div className="form-grid" data-wizard-step="4">
-          <FilePicker label={tx(lang, 'Your own tools', 'Tus herramientas propias')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} required fieldKey="tools" invalid={Boolean(fieldErrors.tools)} error={fieldErrors.tools} hint={tx(lang, 'Required: show the hand tools and diagnostic tools you personally own and use, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Obligatorio: muestra las herramientas manuales y de diagnóstico que posees y utilizas, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
+          <FilePicker label={tx(lang, 'Your own tools', 'Tus herramientas propias')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} required fieldKey="tools" invalid={Boolean(fieldErrors.tools)} error={fieldErrors.tools} hint={tx(lang, 'Required: add one or more clear photos of the hand and diagnostic tools you personally own and use. You may take photos one at a time or choose multiple images from the gallery. JPG, PNG or WebP; 12 MB each.', 'Obligatorio: agrega una o más fotos claras de las herramientas manuales y de diagnóstico que posees y utilizas. Puedes tomar fotos una por una o elegir varias imágenes de la galería. JPG, PNG o WebP; 12 MB cada archivo.')} />
           <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} files={equipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
           <div className={`work-samples full ${fieldErrors.skill_evidence ? 'field-invalid' : ''}`} data-field="skill_evidence">
             <div className="work-samples-heading">
@@ -947,7 +1001,7 @@ function ProviderApplicationPage({ lang, shell }) {
               </div>
               <Field label={tx(lang, 'What did you diagnose or repair?', '¿Qué diagnosticaste o reparaste?')} required hint={tx(lang, 'Describe the original problem, your diagnosis, the work you personally performed, and the final result.', 'Describe el problema original, tu diagnóstico, el trabajo que realizaste personalmente y el resultado final.')}><textarea value={evidence.description} onChange={(event) => setSkillEvidenceValue(skill, index, 'description', event.target.value)} /></Field>
               <div className="work-sample-fields">
-                <FilePicker label={tx(lang, 'Work video', 'Video del trabajo')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setSkillEvidenceValue(skill, index, 'videos', files)} files={evidence.videos} required hint={tx(lang, 'Required. Show the work and explain what you are doing. Up to five minutes per video.', 'Obligatorio. Muestra el trabajo y explica qué estás haciendo. Máximo cinco minutos por video.')} />
+                <FilePicker label={tx(lang, 'Work videos', 'Videos del trabajo')} accept="video/mp4,video/quicktime,video/webm" onChange={(files) => setSkillEvidenceValue(skill, index, 'videos', files)} files={evidence.videos} required hint={tx(lang, 'Required: add one or more videos. You may divide the work into multiple parts; each video may be up to five minutes.', 'Obligatorio: agrega uno o más videos. Puedes dividir el trabajo en varias partes; cada video puede durar hasta cinco minutos.')} />
                 <FilePicker label={tx(lang, 'Work photos, optional', 'Fotos del trabajo, opcional')} accept="image/jpeg,image/png,image/webp" onChange={(files) => setSkillEvidenceValue(skill, index, 'photos', files)} files={evidence.photos} />
                 <FilePicker label={tx(lang, 'Certificate for this skill, optional', 'Certificado de esta habilidad, opcional')} accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(files) => setSkillEvidenceValue(skill, index, 'certificates', files)} files={evidence.certificates} hint={tx(lang, 'Training, course, or technical certification supporting this specific skill.', 'Curso, capacitación o certificación técnica que respalde esta habilidad específica.')} />
               </div>
@@ -960,10 +1014,10 @@ function ProviderApplicationPage({ lang, shell }) {
             <BooleanChoice label={tx(lang, 'I accept the Beta Program Notice, draft network terms and privacy notice.', 'Acepto el Aviso del Programa Beta, los términos preliminares de la red y el aviso de privacidad.')} description={tx(lang, 'Material policy or future pricing changes require notice before they apply.', 'Los cambios importantes de políticas o precios futuros requieren aviso antes de aplicarse.')} checked={form.terms_accepted && form.privacy_accepted} onChange={(value) => { set('terms_accepted', value); set('privacy_accepted', value); }} />
             <BooleanChoice label={tx(lang, 'I understand that I am applying as an independent provider, not as a CarDaddy employee.', 'Entiendo que solicito participar como proveedor independiente, no como empleado de CarDaddy.')} checked={form.independent_provider_acknowledged} onChange={(value) => set('independent_provider_acknowledged', value)} />
             <div className="payment-policy-confirmed"><Check size={17} /><span>{tx(lang, 'Required no-advance-payment policy accepted.', 'Política obligatoria de cero pagos por adelantado aceptada.')}</span></div>
-            <BooleanChoice label={tx(lang, 'Optional media permission', 'Permiso opcional de contenido')} description={tx(lang, 'I confirm I have the right to share the submitted media and grant CarDaddy non-exclusive permission to use selected work samples on its website and social channels. Nothing is published automatically.', 'Confirmo que tengo derecho a compartir el contenido enviado y otorgo a CarDaddy permiso no exclusivo para usar trabajos seleccionados en su sitio web y redes sociales. Nada se publica automáticamente.')} checked={form.media_publicity_consent} onChange={(value) => set('media_publicity_consent', value)} />
+            <BooleanChoice label={tx(lang, 'Required permission to verify and promote your work.', 'Permiso obligatorio para verificar y promocionar tu trabajo.')} description={tx(lang, 'I confirm I own or may share the submitted work media and grant CarDaddy a non-exclusive, royalty-free permission to select, edit and publish work photos or videos on its website, social networks and advertising. I will not upload copyrighted music, third-party logos, confidential information, or identifiable people without permission. Private identity, insurance and certification documents are not promotional content.', 'Confirmo que soy propietario o puedo compartir el contenido de trabajo enviado y otorgo a CarDaddy permiso no exclusivo y libre de regalías para seleccionar, editar y publicar fotos o videos de trabajos en su sitio web, redes sociales y publicidad. No subiré música protegida, logos de terceros, información confidencial ni personas identificables sin permiso. Los documentos privados de identidad, seguro y certificación no son contenido promocional.')} checked={form.media_publicity_consent} onChange={(value) => set('media_publicity_consent', value)} />
             {fieldErrors.required_consents ? <small className="field-error" role="alert">{fieldErrors.required_consents}</small> : null}
           </div>
-          <div className="private-file-note full"><LockKeyhole size={20} /><span>{tx(lang, 'Evidence remains private unless separate media permission is granted and CarDaddy selects it for publication. Final wording requires legal review.', 'La evidencia permanece privada salvo que se otorgue el permiso de contenido y CarDaddy la seleccione para publicación. La redacción final requiere revisión legal.')}</span></div>
+          <div className="private-file-note full"><LockKeyhole size={20} /><span>{tx(lang, 'Application records and private documents remain restricted. Only selected work photos or videos may be used for verification, portfolio display or promotion under the required permission above.', 'Los registros de la solicitud y documentos privados permanecen restringidos. Solo las fotos o videos de trabajos seleccionados pueden utilizarse para verificación, portafolio o promoción bajo el permiso obligatorio anterior.')}</span></div>
         </div> : null}
 
         {message ? <p className="status-message">{message}</p> : null}
@@ -1003,6 +1057,9 @@ function ServiceRequestPage({ lang, shell }) {
   const [busy, setBusy] = useState(false);
   const [catalogModels, setCatalogModels] = useState([]);
   const [catalogStatus, setCatalogStatus] = useState('idle');
+  useEffect(() => {
+    if (step > 1) scrollToWizardProgress();
+  }, [step]);
   const set = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));

@@ -16,12 +16,15 @@ test('installs one global mobile keyboard guard for every application route', ()
 test('keeps the focused control inside the visual viewport during keyboard animation', () => {
   assert.match(keyboardSource, /viewport\?\.addEventListener\('resize'/);
   assert.match(keyboardSource, /viewport\?\.addEventListener\('scroll'/);
-  assert.match(keyboardSource, /scrollIntoView\(\{ block: 'center'/);
-  assert.match(keyboardSource, /scheduleVisibilityCheck\(520\)/);
+  assert.match(keyboardSource, /getScrollableParent/);
+  assert.match(keyboardSource, /window\.scrollBy\(\{ top: correction/);
+  assert.match(keyboardSource, /scheduleVisibilityCheck\(950, true\)/);
+  assert.match(keyboardSource, /forceUpperPosition/);
 });
 
 test('adds keyboard-safe scroll space to public and admin forms', () => {
   assert.match(stylesSource, /--keyboard-inset: 0px/);
+  assert.match(stylesSource, /--keyboard-safe-top: 112px/);
   assert.match(stylesSource, /html\.keyboard-open body/);
   assert.match(stylesSource, /html\.keyboard-open \.admin-main/);
   assert.match(htmlSource, /interactive-widget=resizes-content/);
