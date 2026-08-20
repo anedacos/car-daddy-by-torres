@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   citiesByState,
   copyScheduleToDays,
+  deriveServicesFromSpecialties,
   digitsOnly,
   generateCaseNumber,
   getCitySuggestions,
@@ -48,6 +49,13 @@ test('vehicle suggestions and internal classification use make, model, and fuel'
   assert.equal(inferVehicleType({ vehicle_make: 'Ford', vehicle_model: 'F-150', fuel_type: 'Gasoline' }), 'Light truck');
 });
 
+test('provider specialties derive matching services without duplicate questions', () => {
+  assert.deepEqual(
+    deriveServicesFromSpecialties(['Engine repair', 'Brakes', 'Batteries & charging systems', 'Roadside assistance']),
+    ['Mechanical repair', 'Electrical repair', 'No-start help', 'Brakes', 'Roadside assistance'],
+  );
+});
+
 test('a completed schedule can be copied to every selected day', () => {
   const monday = [{ start: '08:00', end: '17:00' }, { start: '18:00', end: '20:00' }];
   const schedule = copyScheduleToDays({ Monday: monday }, 'Monday', ['Monday', 'Tuesday', 'Wednesday']);
@@ -79,6 +87,19 @@ test('qualified opportunities require consent, geography, service, and an active
   assert.equal(isQualifiedOpportunity(serviceCase, provider), true);
   assert.equal(isQualifiedOpportunity({ ...serviceCase, state: 'Alabama' }, provider), false);
   assert.equal(isQualifiedOpportunity({ ...serviceCase, share_consent: false }, provider), false);
+});
+
+test('customer and provider payment methods must be compatible when both are captured', () => {
+  const serviceCase = {
+    phone: '5550100000', share_consent: true, state: 'Mississippi',
+    service_requested: 'Diagnostics', specialty_needed: 'Computer diagnostics', payment_method: 'Cash',
+  };
+  const provider = {
+    application_status: 'Approved', account_status: 'Active', state: 'Mississippi',
+    services_not_offered: [], specialties: ['Computer diagnostics'], payment_methods: ['Card', 'Zelle'],
+  };
+  assert.equal(isQualifiedOpportunity(serviceCase, provider), false);
+  assert.equal(isQualifiedOpportunity(serviceCase, { ...provider, payment_methods: ['Cash', 'Card'] }), true);
 });
 
 test('compatible providers are ranked by local and availability signals', () => {

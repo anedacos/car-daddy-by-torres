@@ -372,7 +372,7 @@ function CaseManagement({ cases, providers, events, reload }) {
             <div className="case-admin-grid">
               <div><b>Customer</b><p>{serviceCase.customer_name}<br />{serviceCase.phone}<br />{serviceCase.email}<br /><small>Email: {serviceCase.email_verification_status || 'Not captured'}</small></p></div>
               <div><b>Service area / vehicle</b><p>{serviceCase.city}, {serviceCase.state} {serviceCase.zip_code}<br /><small>Exact address coordinated after provider assignment.</small><br />{serviceCase.vehicle_year} {serviceCase.vehicle_make} {serviceCase.vehicle_model}</p></div>
-              <div><b>Request</b><p>{serviceCase.service_requested}<br />{serviceCase.specialty_needed}<br />{serviceCase.urgency}{serviceCase.source ? <><br /><small>Source: {serviceCase.source}{serviceCase.campaign ? ` / ${serviceCase.campaign}` : ''}</small></> : null}</p></div>
+              <div><b>Request</b><p>{serviceCase.service_requested}<br />{serviceCase.specialty_needed}<br />{serviceCase.urgency}{serviceCase.payment_method ? <><br /><small>Payment: {serviceCase.payment_method}</small></> : null}{serviceCase.source ? <><br /><small>Source: {serviceCase.source}{serviceCase.campaign ? ` / ${serviceCase.campaign}` : ''}</small></> : null}</p></div>
               <div><b>Evidence</b><PrivateFiles manifest={serviceCase.media_manifest || []} /></div>
             </div>
             <p className="case-problem">{serviceCase.problem_description}</p>

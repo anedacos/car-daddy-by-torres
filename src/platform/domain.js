@@ -85,31 +85,60 @@ export const caseStatuses = [
   'In dispute',
 ];
 
-export const specialties = [
-  'General automotive mechanics',
-  'Electromechanics',
-  'Electrical diagnostics',
-  'Computer diagnostics',
-  'Gas vehicles',
-  'Diesel mechanics',
-  'Engine',
-  'Transmission',
-  'Air conditioning',
-  'Brakes',
-  'Suspension',
-  'Batteries',
-  'Alternators',
-  'Starters',
-  'Maintenance',
-  'Roadside assistance',
-  'Emergency service',
-  'Bodywork',
-  'Paint',
-  'European vehicles',
-  'Hybrid vehicles',
-  'Electric vehicles',
-  'Other',
+export const specialtyGroups = [
+  {
+    id: 'general',
+    label: 'General automotive mechanics',
+    options: [
+      'Engine repair',
+      'Automatic transmission & transaxle',
+      'Manual drivetrain & axles',
+      'Suspension & steering',
+      'Brakes',
+      'Heating & air conditioning',
+      'Engine performance & drivability',
+      'Maintenance & light repair',
+    ],
+  },
+  {
+    id: 'electrical',
+    label: 'Electrical, electronic & diagnostics',
+    options: [
+      'Electromechanical systems',
+      'Electrical/electronic systems',
+      'Computer diagnostics',
+      'Batteries & charging systems',
+      'Starting systems',
+      'No-start diagnostics',
+    ],
+  },
+  {
+    id: 'propulsion',
+    label: 'Fuel & propulsion specialties',
+    options: [
+      'Gasoline engine systems',
+      'Light vehicle diesel',
+      'Medium/heavy diesel',
+      'Hybrid vehicles',
+      'Electric vehicles',
+    ],
+  },
+  {
+    id: 'specialized',
+    label: 'Mobile & specialized work',
+    options: [
+      'Roadside assistance',
+      'Car dolly towing',
+      'Boat & marine mechanics',
+      'Motorcycle, ATV & quad mechanics',
+      'Small engines & equipment',
+      'Heavy equipment mechanics',
+      'European vehicles',
+    ],
+  },
 ];
+
+export const specialties = specialtyGroups.flatMap((group) => group.options);
 
 export const incidentTypes = [
   'Late communication',
@@ -272,12 +301,30 @@ export function validateProviderSkillEvidence({ specialties = [], evidenceBySkil
   return issues;
 }
 
+/** @param {string[]} selectedSpecialties */
+export function deriveServicesFromSpecialties(selectedSpecialties = []) {
+  const selected = new Set(selectedSpecialties);
+  const services = new Set();
+  /** @param {string[]} values */
+  const includesAny = (values) => values.some((value) => selected.has(value));
+
+  if (includesAny(['Computer diagnostics', 'Engine performance & drivability', 'No-start diagnostics'])) services.add('Diagnostics');
+  if (includesAny(['Engine repair', 'Automatic transmission & transaxle', 'Manual drivetrain & axles', 'Suspension & steering', 'Maintenance & light repair', 'Gasoline engine systems', 'Light vehicle diesel', 'Medium/heavy diesel', 'Boat & marine mechanics', 'Motorcycle, ATV & quad mechanics', 'Small engines & equipment', 'Heavy equipment mechanics'])) services.add('Mechanical repair');
+  if (includesAny(['Electromechanical systems', 'Electrical/electronic systems', 'Batteries & charging systems', 'Starting systems', 'Hybrid vehicles', 'Electric vehicles'])) services.add('Electrical repair');
+  if (selected.has('No-start diagnostics') || selected.has('Starting systems') || selected.has('Batteries & charging systems')) services.add('No-start help');
+  if (selected.has('Brakes')) services.add('Brakes');
+  if (selected.has('Roadside assistance')) services.add('Roadside assistance');
+  if (selected.has('Car dolly towing')) services.add('Car dolly towing');
+  return [...services];
+}
+
 /** @param {PlatformRecord} serviceCase @param {PlatformRecord} provider */
 export function isQualifiedOpportunity(serviceCase, provider) {
   if (!serviceCase?.share_consent || !serviceCase?.phone) return false;
   if ((provider?.application_status && provider.application_status !== 'Approved') || provider?.account_status !== 'Active') return false;
   if (provider.state !== serviceCase.state) return false;
   if (provider.services_not_offered?.includes(serviceCase.service_requested)) return false;
+  if (serviceCase.payment_method && provider.payment_methods?.length && !provider.payment_methods.includes(serviceCase.payment_method)) return false;
   if (provider.vehicle_types_not_served?.includes(serviceCase.vehicle_type)) return false;
   return provider.specialties?.includes(serviceCase.specialty_needed);
 }

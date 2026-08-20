@@ -4,22 +4,30 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  CarFront,
   Check,
+  ChevronDown,
   Clock3,
   Copy,
   FileCheck2,
+  Fuel,
+  LifeBuoy,
   LockKeyhole,
   MailCheck,
   Network,
   Plus,
   ShieldCheck,
+  Tractor,
   Trash2,
   Upload,
   UserRoundCheck,
+  Wrench,
+  Zap,
 } from 'lucide-react';
 import { business, languages } from '../data/content';
 import {
   copyScheduleToDays,
+  deriveServicesFromSpecialties,
   digitsOnly,
   getCitySuggestions,
   getVehicleMakeSuggestions,
@@ -31,6 +39,7 @@ import {
   isValidZipCode,
   launchStates,
   specialties,
+  specialtyGroups,
   validateProviderSkillEvidence,
 } from './domain';
 import {
@@ -50,6 +59,24 @@ const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const vehicleTypes = ['Car', 'Light truck', 'Diesel truck', 'Heavy equipment', 'Light equipment', 'Boat', 'Motorcycle', 'ATV / Quad', 'Hybrid vehicle', 'Electric vehicle'];
 const paymentMethods = ['Cash', 'Zelle', 'Cash App', 'Card', 'Check', 'Other'];
 const serviceTypes = ['Diagnostics', 'Mechanical repair', 'Electrical repair', 'No-start help', 'Brakes', 'Roadside assistance', 'Car dolly towing', 'Other'];
+const providerVehicleCategories = [
+  { id: 'light', label: 'Cars, SUVs & light trucks', labelEs: 'Automóviles, SUVs y camionetas', values: ['Car', 'Light truck'] },
+  { id: 'trucks', label: 'Medium & heavy-duty trucks', labelEs: 'Camiones medianos y pesados', values: ['Diesel truck'] },
+  { id: 'heavy', label: 'Heavy equipment', labelEs: 'Maquinaria pesada', values: ['Heavy equipment'] },
+  { id: 'small', label: 'Small engines & light equipment', labelEs: 'Motores pequeños y equipo ligero', values: ['Light equipment'] },
+  { id: 'marine', label: 'Boats & marine equipment', labelEs: 'Embarcaciones y equipo marino', values: ['Boat'] },
+  { id: 'powersports', label: 'Motorcycles, ATVs & quads', labelEs: 'Motocicletas, ATVs y cuatrimotos', values: ['Motorcycle', 'ATV / Quad'] },
+  { id: 'electrified', label: 'Hybrid & electric vehicles', labelEs: 'Vehículos híbridos y eléctricos', values: ['Hybrid vehicle', 'Electric vehicle'] },
+];
+
+const specialtyGroupCopy = {
+  general: { labelEs: 'Mecánica automotriz general', description: 'Core mechanical systems for cars and light trucks.', descriptionEs: 'Sistemas mecánicos principales de automóviles y camionetas.' },
+  electrical: { labelEs: 'Electricidad, electrónica y diagnóstico', description: 'Electrical faults, scan tools, starting and charging systems.', descriptionEs: 'Fallas eléctricas, escáner, arranque y sistemas de carga.' },
+  propulsion: { labelEs: 'Combustible y sistemas de propulsión', description: 'Gasoline, diesel, hybrid and electric power systems.', descriptionEs: 'Sistemas de gasolina, diésel, híbridos y eléctricos.' },
+  specialized: { labelEs: 'Trabajo móvil y especializado', description: 'Roadside, marine, equipment and specialty vehicle work.', descriptionEs: 'Asistencia, embarcaciones, equipos y vehículos especializados.' },
+};
+
+const specialtyGroupIcons = { general: Wrench, electrical: Zap, propulsion: Fuel, specialized: LifeBuoy };
 
 const spanishOptions = {
   Monday: 'Lunes', Tuesday: 'Martes', Wednesday: 'Miércoles', Thursday: 'Jueves', Friday: 'Viernes', Saturday: 'Sábado', Sunday: 'Domingo',
@@ -71,6 +98,16 @@ const spanishOptions = {
   'Price different from agreed': 'Precio diferente al acordado', 'Poor repair': 'Reparación deficiente',
   'Vehicle damage': 'Daño al vehículo', 'Inappropriate conduct': 'Conducta inapropiada',
   'Misuse of information': 'Uso indebido de información', 'Advance payment request': 'Solicitud de pago adelantado', Fraud: 'Fraude', Safety: 'Seguridad',
+  'Engine repair': 'Reparación de motores', 'Automatic transmission & transaxle': 'Transmisión automática y transeje',
+  'Manual drivetrain & axles': 'Tren motriz manual y ejes', 'Suspension & steering': 'Suspensión y dirección',
+  'Heating & air conditioning': 'Calefacción y aire acondicionado', 'Engine performance & drivability': 'Rendimiento del motor y manejabilidad',
+  'Maintenance & light repair': 'Mantenimiento y reparación ligera', 'Electromechanical systems': 'Sistemas electromecánicos',
+  'Electrical/electronic systems': 'Sistemas eléctricos y electrónicos', 'Batteries & charging systems': 'Baterías y sistemas de carga',
+  'Starting systems': 'Sistemas de arranque', 'No-start diagnostics': 'Diagnóstico de vehículo que no enciende',
+  'Gasoline engine systems': 'Sistemas de motores a gasolina', 'Light vehicle diesel': 'Diésel para vehículos livianos',
+  'Medium/heavy diesel': 'Diésel mediano y pesado', 'Boat & marine mechanics': 'Mecánica de embarcaciones',
+  'Motorcycle, ATV & quad mechanics': 'Mecánica de motocicletas, ATVs y cuatrimotos',
+  'Small engines & equipment': 'Motores pequeños y equipo', 'Heavy equipment mechanics': 'Mecánica de maquinaria pesada',
 };
 
 function tx(lang, en, es) {
@@ -215,6 +252,65 @@ function CheckboxGroup({ label, options, values, onChange, required = false, lan
             <span>{optionLabel(lang, option)}</span>
           </label>
         ))}
+      </div>
+      {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
+    </fieldset>
+  );
+}
+
+function GroupedSpecialtySelector({ lang, values, onChange, invalid = false, error }) {
+  const [openGroup, setOpenGroup] = useState('general');
+  const toggleSkill = (skill) => onChange(values.includes(skill) ? values.filter((value) => value !== skill) : [...values, skill]);
+  const toggleGroup = (group, checked) => onChange(checked
+    ? [...new Set([...values, ...group.options])]
+    : values.filter((value) => !group.options.includes(value)));
+
+  return (
+    <fieldset className={`grouped-specialties full ${invalid ? 'field-invalid' : ''}`} data-field="specialties">
+      <legend>{tx(lang, 'Services you can verify', 'Servicios que puedes comprobar')} <b>*</b></legend>
+      <p className="form-help">{tx(lang, 'Open a category and select only work you can support with a video or certificate.', 'Abre una categoría y selecciona únicamente trabajos que puedas respaldar con un video o certificado.')}</p>
+      <div className="specialty-groups">
+        {specialtyGroups.map((group) => {
+          const copy = specialtyGroupCopy[group.id];
+          const Icon = specialtyGroupIcons[group.id];
+          const selectedCount = group.options.filter((option) => values.includes(option)).length;
+          const isOpen = openGroup === group.id;
+          const allSelected = selectedCount === group.options.length;
+          return <section className={`specialty-group ${isOpen ? 'is-open' : ''}`} key={group.id}>
+            <button type="button" className="specialty-group-toggle" aria-expanded={isOpen} onClick={() => setOpenGroup(isOpen ? '' : group.id)}>
+              <Icon size={20} />
+              <span><strong>{lang === 'es' ? copy.labelEs : group.label}</strong><small>{tx(lang, copy.description, copy.descriptionEs)}</small></span>
+              {selectedCount ? <em>{selectedCount} {selectedCount === 1 ? tx(lang, 'selected', 'seleccionado') : tx(lang, 'selected', 'seleccionados')}</em> : null}
+              <ChevronDown size={18} />
+            </button>
+            {isOpen ? <div className="specialty-group-options">
+              <label className="select-all-option"><input type="checkbox" checked={allSelected} onChange={(event) => toggleGroup(group, event.target.checked)} /><span>{tx(lang, 'Select all in this category', 'Seleccionar todo en esta categoría')}</span></label>
+              <div className="choice-grid">
+                {group.options.map((option) => <label key={option} className="choice-item"><input type="checkbox" checked={values.includes(option)} onChange={() => toggleSkill(option)} /><span>{optionLabel(lang, option)}</span></label>)}
+              </div>
+            </div> : null}
+          </section>;
+        })}
+      </div>
+      {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
+    </fieldset>
+  );
+}
+
+function VehicleCategorySelector({ lang, values, onChange, invalid = false, error }) {
+  const toggleCategory = (category, checked) => onChange(checked
+    ? [...new Set([...values, ...category.values])]
+    : values.filter((value) => !category.values.includes(value)));
+  return (
+    <fieldset className={`vehicle-category-selector full ${invalid ? 'field-invalid' : ''}`} data-field="vehicle_types_served">
+      <legend>{tx(lang, 'Vehicles and equipment you work on', 'Vehículos y equipos que atiendes')} <b>*</b></legend>
+      <p className="form-help">{tx(lang, 'Fuel and propulsion specialties are selected in the section above.', 'Las especialidades de combustible y propulsión se seleccionan en la sección anterior.')}</p>
+      <div className="vehicle-category-grid">
+        {providerVehicleCategories.map((category) => <label className="vehicle-category-option" key={category.id}>
+          <input type="checkbox" checked={category.values.every((value) => values.includes(value))} onChange={(event) => toggleCategory(category, event.target.checked)} />
+          <CarFront size={18} />
+          <span>{lang === 'es' ? category.labelEs : category.label}</span>
+        </label>)}
       </div>
       {invalid && error ? <small className="field-error" role="alert">{error}</small> : null}
     </fieldset>
@@ -438,7 +534,7 @@ const demoProvider = {
   max_travel_hours: '1',
   languages: ['English', 'Spanish'],
   years_experience: 9,
-  specialties: ['Electrical diagnostics', 'Engine', 'Air conditioning'],
+  specialties: ['Electrical/electronic systems', 'Engine repair', 'Heating & air conditioning'],
   vehicle_types_served: ['Car', 'Light truck', 'Diesel truck', 'Light equipment'],
   services_offered: demoServices,
   services_not_offered: ['Other'],
@@ -465,9 +561,9 @@ const demoProvider = {
 };
 
 const createDemoSkillEvidence = () => ({
-  'Electrical diagnostics': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2017', vehicle_make_model: 'Honda Accord', description: 'Diagnosed an intermittent no-start condition, repaired damaged wiring in the starter circuit, and verified reliable operation.' },
-  Engine: { ...createSkillEvidenceItem(), vehicle_type: 'Light truck', vehicle_year: '2015', vehicle_make_model: 'Ford F-150', description: 'Performed compression and fuel-system tests, replaced the failed component, and confirmed normal engine operation.' },
-  'Air conditioning': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2019', vehicle_make_model: 'Toyota Camry', description: 'Found a refrigerant leak, replaced the damaged seal, evacuated and recharged the system, and verified vent temperature.' },
+  'Electrical/electronic systems': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2017', vehicle_make_model: 'Honda Accord', description: 'Diagnosed an intermittent no-start condition, repaired damaged wiring in the starter circuit, and verified reliable operation.' },
+  'Engine repair': { ...createSkillEvidenceItem(), vehicle_type: 'Light truck', vehicle_year: '2015', vehicle_make_model: 'Ford F-150', description: 'Performed compression and fuel-system tests, replaced the failed component, and confirmed normal engine operation.' },
+  'Heating & air conditioning': { ...createSkillEvidenceItem(), vehicle_type: 'Car', vehicle_year: '2019', vehicle_make_model: 'Toyota Camry', description: 'Found a refrigerant leak, replaced the damaged seal, evacuated and recharged the system, and verified vent temperature.' },
 });
 
 async function publicAssetFile(path, name) {
@@ -570,7 +666,8 @@ function ProviderApplicationPage({ lang, shell }) {
     setFieldErrors((current) => ({ ...current, [`skill_evidence_${index}`]: undefined, skill_evidence: undefined }));
   };
   const setSpecialties = (values) => {
-    set('specialties', values);
+    setForm((current) => ({ ...current, specialties: values, services_offered: deriveServicesFromSpecialties(values), services_not_offered: [] }));
+    setFieldErrors((current) => ({ ...current, specialties: undefined }));
     setSkillEvidence((current) => Object.fromEntries(values.map((skill) => [skill, current[skill] || createSkillEvidenceItem()])));
   };
 
@@ -601,7 +698,7 @@ function ProviderApplicationPage({ lang, shell }) {
   function next() {
     const required = step === 1
       ? ['full_name', 'phone', 'email', 'state', 'city', 'zip_code', 'max_travel_radius', 'years_experience', 'languages']
-      : step === 2 ? ['specialties', 'vehicle_types_served', 'services_offered'] : ['available_days'];
+      : step === 2 ? ['specialties', 'vehicle_types_served', 'minimum_inspection_fee', 'payment_methods'] : ['available_days'];
     const errors = Object.fromEntries(required
       .filter((key) => Array.isArray(form[key]) ? !form[key].length : form[key] === '' || form[key] === null)
       .map((key) => [key, tx(lang, 'This field is required.', 'Este campo es obligatorio.')]));
@@ -628,7 +725,7 @@ function ProviderApplicationPage({ lang, shell }) {
     setFieldErrors({});
     setMessage('');
     setStep((current) => current + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToWizardProgress();
   }
 
   async function submit(event) {
@@ -741,7 +838,7 @@ function ProviderApplicationPage({ lang, shell }) {
       {form.no_advance_fee_acknowledged ? <>
         <WizardProgress step={step} labels={tx(lang, ['Contact', 'Services', 'Availability', 'Evidence'], ['Contacto', 'Servicios', 'Disponibilidad', 'Evidencia'])} />
         <form className="platform-wizard" onSubmit={submit}>
-        {step === 1 ? <div className="form-grid">
+        {step === 1 ? <div className="form-grid" data-wizard-step="1">
           <Field label={tx(lang, 'Full name', 'Nombre completo')} required fieldKey="full_name" invalid={Boolean(fieldErrors.full_name)} error={fieldErrors.full_name}><input value={form.full_name} onChange={(e) => set('full_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Business name, optional', 'Nombre comercial, opcional')}><input value={form.business_name} onChange={(e) => set('business_name', e.target.value)} /></Field>
           <Field label={tx(lang, 'Phone', 'Teléfono')} required hint={tx(lang, '10 digits, numbers only.', '10 dígitos, solo números.')} fieldKey="phone" invalid={Boolean(fieldErrors.phone)} error={fieldErrors.phone}><input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="tel" maxLength="10" value={form.phone} aria-invalid={Boolean(fieldErrors.phone)} onBlur={() => validateContactField('phone')} onChange={(e) => set('phone', digitsOnly(e.target.value, 10))} /></Field>
@@ -755,27 +852,21 @@ function ProviderApplicationPage({ lang, shell }) {
           <CheckboxGroup lang={lang} label={tx(lang, 'Languages', 'Idiomas')} options={['English', 'Spanish']} values={form.languages} onChange={(value) => set('languages', value)} required fieldKey="languages" invalid={Boolean(fieldErrors.languages)} error={fieldErrors.languages} />
         </div> : null}
 
-        {step === 2 ? <div className="form-grid">
-          <CheckboxGroup lang={lang} label={tx(lang, 'Verifiable skills and specialties', 'Habilidades y especialidades comprobables')} options={specialties} values={form.specialties} onChange={setSpecialties} required fieldKey="specialties" invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
-          <CheckboxGroup lang={lang} label={tx(lang, 'Vehicle types served', 'Tipos de vehículos que atiendes')} options={vehicleTypes} values={form.vehicle_types_served} onChange={(value) => set('vehicle_types_served', value)} required fieldKey="vehicle_types_served" invalid={Boolean(fieldErrors.vehicle_types_served)} error={fieldErrors.vehicle_types_served} />
-          <CheckboxGroup lang={lang} label={tx(lang, 'Services performed', 'Servicios que realizas')} options={serviceTypes} values={form.services_offered} onChange={(value) => {
-            set('services_offered', value);
-          }} required fieldKey="services_offered" invalid={Boolean(fieldErrors.services_offered)} error={fieldErrors.services_offered} />
-          <details className="optional-form-section full">
-            <summary>{tx(lang, 'Optional: services you prefer not to perform', 'Opcional: servicios que prefieres no realizar')}</summary>
-            <CheckboxGroup lang={lang} label={tx(lang, 'Do not match me with these services', 'No asignarme estos servicios')} options={[...serviceTypes, 'Bodywork', 'Paint']} values={form.services_not_offered} onChange={(value) => set('services_not_offered', value)} />
-          </details>
+        {step === 2 ? <div className="form-grid" data-wizard-step="2">
+          <GroupedSpecialtySelector lang={lang} values={form.specialties} onChange={setSpecialties} invalid={Boolean(fieldErrors.specialties)} error={fieldErrors.specialties} />
+          <VehicleCategorySelector lang={lang} values={form.vehicle_types_served} onChange={(value) => set('vehicle_types_served', value)} invalid={Boolean(fieldErrors.vehicle_types_served)} error={fieldErrors.vehicle_types_served} />
           <div className="inspection-fee-field full">
           <Field
-            label={tx(lang, 'Minimum inspection fee', 'Tarifa mínima de inspección')}
-            hint={tx(lang, 'Agree on this amount before the visit. It may only be collected after you physically arrive and before the inspection begins. Travel and mobilization fees are not permitted.', 'Acuerda este valor antes de la visita. Solo puede cobrarse después de que llegues físicamente y antes de comenzar la inspección. No se permiten tarifas de viaje ni de movilización.')}
-          ><input type="number" min="0" step="0.01" placeholder="0.00" value={form.minimum_inspection_fee} onChange={(e) => set('minimum_inspection_fee', e.target.value)} /></Field>
+            label={tx(lang, 'Minimum on-site inspection fee (USD)', 'Tarifa mínima de inspección en sitio (USD)')}
+            hint={tx(lang, 'Example: $100 within your usual local service area. This is the minimum inspection amount you normally charge after arrival; agree on the exact fee before the visit. It is not a separate per-mile or mobilization fee.', 'Ejemplo: $100 dentro de tu zona local habitual. Es el mínimo que normalmente cobras por inspeccionar después de llegar; acuerda la tarifa exacta antes de la visita. No es un cargo separado por milla ni por movilización.')}
+            required fieldKey="minimum_inspection_fee" invalid={Boolean(fieldErrors.minimum_inspection_fee)} error={fieldErrors.minimum_inspection_fee}
+          ><input type="number" min="0" step="0.01" placeholder="100.00" value={form.minimum_inspection_fee} onChange={(e) => set('minimum_inspection_fee', e.target.value)} /></Field>
           <div className="inspection-fee-reminder"><ShieldCheck size={18} /><span>{tx(lang, 'No advance payment. No travel or mobilization fee.', 'Sin pagos por adelantado. Sin tarifa de viaje ni movilización.')}</span></div>
           </div>
-          <CheckboxGroup lang={lang} label={tx(lang, 'Accepted payment methods', 'Métodos de pago aceptados')} options={paymentMethods} values={form.payment_methods} onChange={(value) => set('payment_methods', value)} />
+          <CheckboxGroup lang={lang} label={tx(lang, 'Which payment methods are you willing to accept?', '¿Qué métodos de pago estás dispuesto a aceptar?')} options={paymentMethods} values={form.payment_methods} onChange={(value) => set('payment_methods', value)} required fieldKey="payment_methods" invalid={Boolean(fieldErrors.payment_methods)} error={fieldErrors.payment_methods} />
         </div> : null}
 
-        {step === 3 ? <div className="form-grid">
+        {step === 3 ? <div className="form-grid" data-wizard-step="3">
           <CheckboxGroup lang={lang} label={tx(lang, 'Available days', 'Días disponibles')} options={days} values={form.available_days} onChange={(value) => set('available_days', value)} required fieldKey="available_days" invalid={Boolean(fieldErrors.available_days)} error={fieldErrors.available_days} />
           {!form.all_day_available ? <ScheduleEditor lang={lang} selectedDays={form.available_days} schedule={form.availability_schedule} onChange={(value) => set('availability_schedule', value)} invalid={Boolean(fieldErrors.availability_schedule)} error={fieldErrors.availability_schedule} /> : null}
           <div className="boolean-grid full">
@@ -799,7 +890,7 @@ function ProviderApplicationPage({ lang, shell }) {
           <p className="form-help full">{tx(lang, '24/7 service is optional. Each independent provider controls their own schedule.', 'La disponibilidad 24/7 es opcional. Cada proveedor independiente controla su propio horario.')}</p>
         </div> : null}
 
-        {step === 4 ? <div className="form-grid">
+        {step === 4 ? <div className="form-grid" data-wizard-step="4">
           <FilePicker label={tx(lang, 'Your own tools', 'Tus herramientas propias')} accept="image/jpeg,image/png,image/webp" onChange={setToolPhotos} files={toolPhotos} required fieldKey="tools" invalid={Boolean(fieldErrors.tools)} error={fieldErrors.tools} hint={tx(lang, 'Required: show the hand tools and diagnostic tools you personally own and use, preferably clean and organized. JPG, PNG or WebP; 12 MB each.', 'Obligatorio: muestra las herramientas manuales y de diagnóstico que posees y utilizas, preferiblemente limpias y organizadas. JPG, PNG o WebP; 12 MB cada archivo.')} />
           <FilePicker label={tx(lang, 'Service equipment and transportation', 'Equipo y transporte de servicio')} accept="image/jpeg,image/png,image/webp" onChange={setEquipmentPhotos} files={equipmentPhotos} hint={tx(lang, 'Show items such as your service vehicle, jack, compressor, generator, scanner, or other larger equipment.', 'Muestra elementos como tu vehículo de servicio, gato, compresor, generador, escáner u otro equipo de mayor tamaño.')} />
           <div className={`work-samples full ${fieldErrors.skill_evidence ? 'field-invalid' : ''}`} data-field="skill_evidence">
@@ -838,7 +929,7 @@ function ProviderApplicationPage({ lang, shell }) {
         </div> : null}
 
         {message ? <p className="status-message">{message}</p> : null}
-        <WizardActions step={step} total={4} back={() => setStep((current) => current - 1)} next={next} submitLabel={tx(lang, 'Submit Application', 'Enviar Solicitud')} busy={busy} lang={lang} />
+        <WizardActions step={step} total={4} back={() => { setStep((current) => current - 1); scrollToWizardProgress(); }} next={next} submitLabel={tx(lang, 'Submit Application', 'Enviar Solicitud')} busy={busy} lang={lang} />
         </form>
       </> : null}
     </ShellComponent>
@@ -849,7 +940,7 @@ const initialCase = {
   customer_name: '', phone: '', email: '', state: 'Mississippi', city: '', zip_code: '',
   vehicle_year: '', vehicle_make: '', vehicle_model: '', vin: '', vehicle_type: 'Car', fuel_type: '',
   problem_description: '', vehicle_starts: '', vehicle_moves: '', service_requested: 'Diagnostics',
-  specialty_needed: 'General automotive mechanics', urgency: 'Immediate', preferred_date: '', preferred_time: '',
+  specialty_needed: 'Computer diagnostics', urgency: 'Immediate', preferred_date: '', preferred_time: '', payment_method: '',
   preferred_language: 'English', share_consent: false, platform_notice_acknowledged: false,
   no_advance_payment_acknowledged: false, source: '', campaign: '',
 };
@@ -946,6 +1037,10 @@ function ServiceRequestPage({ lang, shell }) {
 
   async function submit(event) {
     event.preventDefault();
+    if (!form.payment_method) {
+      showCaseErrors({ payment_method: tx(lang, 'Choose how you plan to pay the provider.', 'Selecciona cómo planeas pagarle al proveedor.') });
+      return;
+    }
     if (!form.share_consent || !form.platform_notice_acknowledged || !form.no_advance_payment_acknowledged) {
       setMessage(tx(lang, 'Accept every required acknowledgement.', 'Acepta todas las autorizaciones requeridas.'));
       return;
@@ -1028,6 +1123,7 @@ function ServiceRequestPage({ lang, shell }) {
         {step === 3 ? <div className="form-grid" data-wizard-step="3">
           <Field label={tx(lang, 'Requested service', 'Servicio solicitado')} required><select value={form.service_requested} onChange={(e) => set('service_requested', e.target.value)}>{serviceTypes.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Likely specialty', 'Especialidad probable')}><select value={form.specialty_needed} onChange={(e) => set('specialty_needed', e.target.value)}>{specialties.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
+          <Field label={tx(lang, 'How do you plan to pay the provider?', '¿Cómo planeas pagarle al proveedor?')} required hint={tx(lang, 'CarDaddy uses this to match you with a provider who accepts that method. Payment is made directly to the provider after arrival, never in advance.', 'CarDaddy usa esta selección para buscar un proveedor que acepte ese método. El pago se realiza directamente al proveedor después de su llegada, nunca por adelantado.')} fieldKey="payment_method" invalid={Boolean(fieldErrors.payment_method)} error={fieldErrors.payment_method}><select value={form.payment_method} onChange={(e) => set('payment_method', e.target.value)}><option value="">{tx(lang, 'Select one payment method', 'Selecciona un método de pago')}</option>{paymentMethods.map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Timing', 'Atención')} required><select value={form.urgency} onChange={(e) => set('urgency', e.target.value)}>{['Immediate', 'Scheduled'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Preferred language', 'Idioma preferido')} required><select value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)}>{['English', 'Spanish'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Preferred date', 'Fecha preferida')}><input type="date" value={form.preferred_date} onChange={(e) => set('preferred_date', e.target.value)} /></Field>
