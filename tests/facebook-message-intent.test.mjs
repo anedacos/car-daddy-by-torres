@@ -22,6 +22,31 @@ test('detects Spanish and English without sending both languages', () => {
   assert.equal(detectFacebookMessageLanguage('I need service for my car'), 'en');
 });
 
+test('keeps intent language independent across customer and provider messages', () => {
+  const spanishCustomer = buildFacebookResponseSequence('Mi Toyota no prende y necesito un mecánico');
+  const englishProvider = buildFacebookResponseSequence("I'm a diesel mechanic looking for extra jobs");
+  const englishCustomer = buildFacebookResponseSequence("My Nissan won't start and I need a mechanic");
+  const spanishProvider = buildFacebookResponseSequence('Soy mecánico y quiero unirme a la red');
+
+  assert.equal(spanishCustomer.classification.intent, FACEBOOK_MESSAGE_INTENTS.SERVICE_REQUEST);
+  assert.equal(spanishCustomer.classification.language, 'es');
+  assert.match(spanishCustomer.replies[0], /\/es\/solicitar-servicio\?/);
+
+  assert.equal(englishProvider.classification.intent, FACEBOOK_MESSAGE_INTENTS.PROVIDER_INTEREST);
+  assert.equal(englishProvider.classification.language, 'en');
+  assert.match(englishProvider.replies[0], /pages\.dev\/unete-a-la-red\?/);
+  assert.doesNotMatch(englishProvider.replies[0], /pages\.dev\/es\/unete-a-la-red/);
+
+  assert.equal(englishCustomer.classification.intent, FACEBOOK_MESSAGE_INTENTS.SERVICE_REQUEST);
+  assert.equal(englishCustomer.classification.language, 'en');
+  assert.match(englishCustomer.replies[0], /pages\.dev\/solicitar-servicio\?/);
+  assert.doesNotMatch(englishCustomer.replies[0], /pages\.dev\/es\/solicitar-servicio/);
+
+  assert.equal(spanishProvider.classification.intent, FACEBOOK_MESSAGE_INTENTS.PROVIDER_INTEREST);
+  assert.equal(spanishProvider.classification.language, 'es');
+  assert.match(spanishProvider.replies[0], /\/es\/unete-a-la-red\?/);
+});
+
 test('recognizes natural-language provider interest', () => {
   for (const message of [
     "I'm a diesel mechanic looking for extra jobs",
