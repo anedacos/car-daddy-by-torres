@@ -20,10 +20,13 @@ export const citiesByState = {
 };
 
 export const vehicleMakes = [
-  'Acura', 'Audi', 'BMW', 'Buick', 'Cadillac', 'Chevrolet', 'Chrysler', 'Dodge', 'Fiat', 'Ford',
-  'Genesis', 'GMC', 'Honda', 'Hyundai', 'Infiniti', 'Jaguar', 'Jeep', 'Kia', 'Land Rover',
-  'Lexus', 'Lincoln', 'Mazda', 'Mercedes-Benz', 'Mini', 'Mitsubishi', 'Nissan', 'Porsche',
-  'Ram', 'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo',
+  'Acura', 'Alfa Romeo', 'Aston Martin', 'Audi', 'Bentley', 'BMW', 'Buick', 'Cadillac',
+  'Chevrolet', 'Chrysler', 'Dodge', 'Ferrari', 'Fiat', 'Fisker', 'Ford', 'Genesis', 'GMC',
+  'Honda', 'Hummer', 'Hyundai', 'Infiniti', 'Isuzu', 'Jaguar', 'Jeep', 'Kia', 'Lamborghini',
+  'Land Rover', 'Lexus', 'Lincoln', 'Lotus', 'Lucid', 'Maserati', 'Maybach', 'Mazda',
+  'McLaren', 'Mercedes-Benz', 'Mercury', 'Mini', 'Mitsubishi', 'Nissan', 'Oldsmobile',
+  'Polestar', 'Pontiac', 'Porsche', 'Ram', 'Rivian', 'Rolls-Royce', 'Saab', 'Saturn', 'Scion',
+  'Smart', 'Subaru', 'Suzuki', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo',
 ];
 
 export const vehicleModelsByMake = {
@@ -42,7 +45,7 @@ export const vehicleModelsByMake = {
   Ram: ['1500', '2500', '3500', 'ProMaster'],
   Subaru: ['Ascent', 'Crosstrek', 'Forester', 'Impreza', 'Legacy', 'Outback', 'WRX'],
   Tesla: ['Model 3', 'Model S', 'Model X', 'Model Y', 'Cybertruck'],
-  Toyota: ['4Runner', 'Camry', 'Corolla', 'Highlander', 'Prius', 'RAV4', 'Sequoia', 'Sienna', 'Tacoma', 'Tundra'],
+  Toyota: ['4Runner', 'Avalon', 'Camry', 'Corolla', 'Corolla Matrix', 'FJ Cruiser', 'Highlander', 'Land Cruiser', 'Prius', 'RAV4', 'Sequoia', 'Sienna', 'Tacoma', 'Tundra', 'Venza', 'Yaris'],
   Volkswagen: ['Atlas', 'Golf', 'ID.4', 'Jetta', 'Passat', 'Taos', 'Tiguan'],
 };
 
@@ -186,11 +189,13 @@ export function getVehicleMakeSuggestions(query = '', limit = 4) {
   return getCompactSuggestions(vehicleMakes, query, limit);
 }
 
-/** @param {string} make @param {string} query @param {number} limit */
-export function getVehicleModelSuggestions(make = '', query = '', limit = 4) {
+/** @param {string} make @param {string} query @param {number} limit @param {string[]} catalogModels */
+export function getVehicleModelSuggestions(make = '', query = '', limit = 4, catalogModels = []) {
   const matchedMake = vehicleMakes.find((value) => value.toLowerCase() === make.trim().toLowerCase());
-  if (!matchedMake) return [];
-  const models = /** @type {Record<string, string[]>} */ (vehicleModelsByMake)[matchedMake] || [];
+  const fallbackModels = matchedMake
+    ? /** @type {Record<string, string[]>} */ (vehicleModelsByMake)[matchedMake] || []
+    : [];
+  const models = [...new Set([...catalogModels, ...fallbackModels])];
   return getCompactSuggestions(models, query, limit);
 }
 

@@ -40,6 +40,8 @@ test('city suggestions stay short and filter within the selected state', () => {
 test('vehicle suggestions and internal classification use make, model, and fuel', () => {
   assert.equal(getVehicleMakeSuggestions('T').includes('Toyota'), true);
   assert.deepEqual(getVehicleModelSuggestions('Toyota', 'Cam'), ['Camry']);
+  assert.deepEqual(getVehicleModelSuggestions('Toyota', 'Ava'), ['Avalon']);
+  assert.deepEqual(getVehicleModelSuggestions('Toyota', 'Cro', 4, ['Crown', 'Crown Signia']), ['Crown', 'Crown Signia']);
   assert.deepEqual(getVehicleModelSuggestions('Unknown make', 'Cam'), []);
   assert.equal(inferVehicleType({ vehicle_make: 'Toyota', vehicle_model: 'Camry', fuel_type: 'Gasoline' }), 'Car');
   assert.equal(inferVehicleType({ vehicle_make: 'Toyota', vehicle_model: 'Tundra', fuel_type: 'Diesel' }), 'Diesel truck');

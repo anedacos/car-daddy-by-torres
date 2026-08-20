@@ -44,6 +44,7 @@ import {
   verifyCaseIdentity,
   verifyEmailToken,
 } from './storage';
+import { fetchVehicleModels } from './vehicle-catalog';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const vehicleTypes = ['Car', 'Light truck', 'Diesel truck', 'Heavy equipment', 'Light equipment', 'Boat', 'Motorcycle', 'ATV / Quad', 'Hybrid vehicle', 'Electric vehicle'];
@@ -871,6 +872,8 @@ function ServiceRequestPage({ lang, shell }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [confirmation, setConfirmation] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [catalogModels, setCatalogModels] = useState([]);
+  const [catalogStatus, setCatalogStatus] = useState('idle');
   const set = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
@@ -882,6 +885,33 @@ function ServiceRequestPage({ lang, shell }) {
     });
     setFieldErrors((current) => ({ ...current, [key]: undefined }));
   };
+
+  useEffect(() => {
+    const year = form.vehicle_year.trim();
+    const make = form.vehicle_make.trim();
+    setCatalogModels([]);
+    if (!/^\d{4}$/.test(year) || make.length < 2) {
+      setCatalogStatus('idle');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setCatalogStatus('loading');
+      try {
+        const models = await fetchVehicleModels(year, make, { signal: controller.signal });
+        setCatalogModels(models);
+        setCatalogStatus(models.length ? 'ready' : 'empty');
+      } catch (error) {
+        if (error.name !== 'AbortError') setCatalogStatus('fallback');
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [form.vehicle_make, form.vehicle_year]);
 
   function showCaseErrors(errors) {
     setFieldErrors(errors);
@@ -902,6 +932,7 @@ function ServiceRequestPage({ lang, shell }) {
     if (step === 1 && form.phone && !isValidUsPhone(form.phone)) errors.phone = tx(lang, 'Enter a 10-digit phone number.', 'Ingresa un teléfono de 10 dígitos.');
     if (step === 1 && form.email && !isValidEmail(form.email)) errors.email = tx(lang, 'Enter a valid email address, such as name@example.com.', 'Ingresa un correo válido, por ejemplo nombre@ejemplo.com.');
     if (step === 1 && form.zip_code && !isValidZipCode(form.zip_code)) errors.zip_code = tx(lang, 'Enter a 5-digit ZIP code.', 'Ingresa un código postal de 5 dígitos.');
+    if (step === 2 && form.vehicle_year && (!/^\d{4}$/.test(form.vehicle_year) || Number(form.vehicle_year) < 1900 || Number(form.vehicle_year) > new Date().getFullYear() + 2)) errors.vehicle_year = tx(lang, 'Enter a valid 4-digit model year.', 'Ingresa un año válido de 4 dígitos.');
     if (Object.keys(errors).length) {
       showCaseErrors(errors);
       return;
@@ -982,9 +1013,9 @@ function ServiceRequestPage({ lang, shell }) {
         </div> : null}
 
         {step === 2 ? <div className="form-grid" data-wizard-step="2">
-          <Field label={tx(lang, 'Year', 'Año')} required fieldKey="vehicle_year" invalid={Boolean(fieldErrors.vehicle_year)} error={fieldErrors.vehicle_year}><input inputMode="numeric" pattern="[0-9]*" maxLength="4" value={form.vehicle_year} onChange={(e) => setVehicleField('vehicle_year', digitsOnly(e.target.value, 4))} /></Field>
+          <Field label={tx(lang, 'Year', 'Año')} required hint={tx(lang, 'Enter the 4-digit model year.', 'Ingresa el año del modelo con 4 dígitos.')} fieldKey="vehicle_year" invalid={Boolean(fieldErrors.vehicle_year)} error={fieldErrors.vehicle_year}><input inputMode="numeric" pattern="[0-9]*" maxLength="4" value={form.vehicle_year} onChange={(e) => setVehicleField('vehicle_year', digitsOnly(e.target.value, 4))} /></Field>
           <CompactAutocompleteField label={tx(lang, 'Make', 'Marca')} value={form.vehicle_make} onChange={(value) => { setVehicleField('vehicle_make', value); setVehicleField('vehicle_model', ''); }} suggestions={getVehicleMakeSuggestions(form.vehicle_make)} hint={tx(lang, 'Type to see matching makes. You can also enter another make.', 'Escribe para ver marcas coincidentes. También puedes ingresar otra marca.')} suggestionLabel={tx(lang, 'Vehicle make suggestions', 'Sugerencias de marcas')} fieldKey="vehicle_make" required invalid={Boolean(fieldErrors.vehicle_make)} error={fieldErrors.vehicle_make} />
-          <CompactAutocompleteField label={tx(lang, 'Model', 'Modelo')} value={form.vehicle_model} onChange={(value) => setVehicleField('vehicle_model', value)} suggestions={getVehicleModelSuggestions(form.vehicle_make, form.vehicle_model)} hint={tx(lang, 'Type to see common models for the selected make.', 'Escribe para ver modelos comunes de la marca seleccionada.')} suggestionLabel={tx(lang, 'Vehicle model suggestions', 'Sugerencias de modelos')} fieldKey="vehicle_model" required invalid={Boolean(fieldErrors.vehicle_model)} error={fieldErrors.vehicle_model} />
+          <CompactAutocompleteField label={tx(lang, 'Model', 'Modelo')} value={form.vehicle_model} onChange={(value) => setVehicleField('vehicle_model', value)} suggestions={getVehicleModelSuggestions(form.vehicle_make, form.vehicle_model, 4, catalogModels)} hint={catalogStatus === 'loading' ? tx(lang, `Loading ${form.vehicle_year} ${form.vehicle_make} models...`, `Cargando modelos ${form.vehicle_year} de ${form.vehicle_make}...`) : catalogStatus === 'ready' ? tx(lang, `Search ${catalogModels.length} models reported to NHTSA for this year.`, `Busca entre ${catalogModels.length} modelos reportados a NHTSA para este año.`) : catalogStatus === 'fallback' ? tx(lang, 'The live catalog is unavailable. You can still type the model manually.', 'El catálogo en línea no está disponible. Aún puedes escribir el modelo manualmente.') : tx(lang, 'Enter year and make, then type to search matching US models.', 'Ingresa el año y la marca; luego escribe para buscar modelos correspondientes en EE. UU.')} suggestionLabel={tx(lang, 'Vehicle model suggestions', 'Sugerencias de modelos')} fieldKey="vehicle_model" required invalid={Boolean(fieldErrors.vehicle_model)} error={fieldErrors.vehicle_model} />
           <Field label={tx(lang, 'VIN, optional', 'VIN, opcional')}><input autoCapitalize="characters" maxLength="17" value={form.vin} onChange={(e) => set('vin', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17))} /></Field>
           <Field label={tx(lang, 'Fuel type', 'Tipo de combustible')} required fieldKey="fuel_type" invalid={Boolean(fieldErrors.fuel_type)} error={fieldErrors.fuel_type}><select value={form.fuel_type} onChange={(e) => setVehicleField('fuel_type', e.target.value)}><option value="">{tx(lang, 'Select fuel type', 'Selecciona el combustible')}</option>{['Gasoline', 'Diesel', 'Hybrid', 'Electric', 'Other'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
           <Field label={tx(lang, 'Does the vehicle start?', '¿El vehículo enciende?')} required fieldKey="vehicle_starts" invalid={Boolean(fieldErrors.vehicle_starts)} error={fieldErrors.vehicle_starts}><select value={form.vehicle_starts} onChange={(e) => set('vehicle_starts', e.target.value)}><option value="">{tx(lang, 'Select Yes or No', 'Selecciona Sí o No')}</option>{['Yes', 'No'].map((value) => <option key={value} value={value}>{optionLabel(lang, value)}</option>)}</select></Field>
